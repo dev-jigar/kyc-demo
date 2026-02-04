@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   GreenButton,
   TextInput,
@@ -34,8 +34,8 @@ export default function AddCustomerForm({
     message: "",
   });
 
-  const update = (k: string, v: string) =>
-    setForm((p) => ({ ...p, [k]: v }));
+  const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [addons, setAddons] = useState<Record<string, any>>({});
   const [configs, setConfigs] = useState<any[]>([]);
@@ -43,8 +43,9 @@ export default function AddCustomerForm({
 
   /* ---------- Load configurations ---------- */
 
+  const [existing, setExisting] = useState<any[]>([]);
 
-   const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<any[]>([]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -52,7 +53,7 @@ export default function AddCustomerForm({
 
       reader.onload = () => {
         const result = reader.result as string;
-        resolve(result.split(',')[1]);
+        resolve(result.split(",")[1]);
       };
 
       reader.onerror = reject;
@@ -67,7 +68,7 @@ export default function AddCustomerForm({
         id: crypto.randomUUID(),
         name: file.name,
         data: await fileToBase64(file),
-      }))
+      })),
     );
 
     setAttachments((prev) => [...prev, ...converted]);
@@ -77,7 +78,9 @@ export default function AddCustomerForm({
     setAttachments((prev) => prev.filter((f) => f.id !== id));
   };
 
-
+  const removeExisting = (id: string) => {
+    setExisting((prev) => prev.filter((f) => f.id !== id));
+  };
 
   useEffect(() => {
     async function loadConfigs() {
@@ -107,13 +110,13 @@ export default function AddCustomerForm({
 
       const res = await fetch(
         `/api/kyc/configurations/${configId}?productLine=KYC`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
 
       const config = await res.json();
 
       const mapped: any = {};
-      
+
       config?.data.groupedAddOns?.forEach((group: any) => {
         group.addOns.forEach((a: any) => {
           mapped[a.addOn] = {
@@ -124,20 +127,21 @@ export default function AddCustomerForm({
       });
 
       setAddons(mapped);
+      setExisting(config?.data?.attachments);
     } finally {
       setIsDataFetching(false);
     }
   };
 
   /* ---------- Submit ---------- */
-
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     const payload = {
       ...form,
-      orgId,
-      groupIds: [customerGroupId],
+      // orgId,
+      // groupIds: [customerGroupId],
+
       addons: Object.entries(addons)
         .filter(([, v]) => v.enabled)
         .map(([key, v]: any) => ({
@@ -146,7 +150,19 @@ export default function AddCustomerForm({
             metadata: { duration: v.range },
           }),
         })),
-      selectedConfig,
+
+      // selectedConfig,
+
+      attachments: attachments.map(({ name, data }) => ({
+        name,
+        data, // base64 string (no prefix)
+      })),
+
+      invitedBy: "adebd2e3-391b-4af8-aad9-990b74cb702d",
+
+      ...(existing.length > 0 && {
+        existing: existing.map((attachment) => attachment.id),
+      }),
     };
 
     await onSubmit(payload);
@@ -156,7 +172,6 @@ export default function AddCustomerForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-
       <Card>
         <SectionTitle>Details</SectionTitle>
 
@@ -191,90 +206,115 @@ export default function AddCustomerForm({
       <Card>
         <SectionTitle>Apply Configuration</SectionTitle>
 
-        <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
-          {configs.map((c) => {
-            const selected = selectedConfig === c.id;
+        <div className="p-4">
+          <select
+            value={selectedConfig ?? ""}
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedConfig(id);
+              applyConfig(id);
+            }}
+            className="w-full border border-slate-200 rounded-md px-3 py-2 bg-white text-black/70 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="" disabled>
+              Select a configuration
+            </option>
 
-            return (
-              <label
-                key={c.id}
-                className={`flex items-center justify-between border rounded-md px-3 py-2 cursor-pointer transition  ${
-                  selected
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <input
-                    type="radio"
-                    checked={selected}
-                    onChange={() => {
-                      setSelectedConfig(c.id);
-                      applyConfig(c.id);
-                    }}
-                  />
-
-                  <span className="truncate font-medium text-black/50">
-                    {c.title?.trim() || "Untitled"}
-                  </span>
-                </div>
-
-                <span className="text-xs text-black/50 whitespace-nowrap">
-                  {new Date(c.updatedAt).toLocaleDateString()}
-                </span>
-              </label>
-            );
-          })}
+            {configs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title?.trim() || "Untitled"} —{" "}
+                {new Date(c.updatedAt).toLocaleDateString()}
+              </option>
+            ))}
+          </select>
         </div>
       </Card>
 
       <AddOnsSection value={addons} onChange={setAddons} />
 
-       {/* ATTACHMENTS */}
+      {/* ATTACHMENTS */}
       <Card>
         <SectionTitle>Upload Attachment</SectionTitle>
 
         <div className="p-6 border-dashed border rounded-md text-center">
-
           <p className="text-sm text-slate-500 mb-3">
             Upload or drag and drop files
           </p>
 
           <input
-            id="file-upload"
+            ref={fileInputRef}
             type="file"
             multiple
             className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = "";
+            }}
           />
 
-          <label htmlFor="file-upload">
-            <GreenButton variant="outline">
-              Add Files
-            </GreenButton>
-          </label>
+          <GreenButton
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Add Files
+          </GreenButton>
 
+          {/* NEW UPLOADS */}
           {attachments.length > 0 && (
-            <div className="mt-4 space-y-2 text-left">
-              {attachments.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex justify-between items-center border px-3 py-2 rounded-md text-sm"
-                >
-                  <span className="truncate">{file.name}</span>
+            <div className="mt-6 text-left">
+              <p className="text-xs font-semibold text-slate-600 mb-2">
+                New Attachments
+              </p>
 
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(file.id)}
-                    className="text-red-500 text-xs"
+              <div className="space-y-2">
+                {attachments.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex justify-between items-center border px-3 py-2 rounded-md text-sm text-black/50"
                   >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                    <span className="truncate">{file.name}</span>
+
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(file.id)}
+                      className="text-red-500 text-xs"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* EXISTING FILES */}
+          {existing.length > 0 && (
+            <div className="mt-6 text-left">
+              <p className="text-xs font-semibold text-slate-600 mb-2">
+                Existing Attachments
+              </p>
+
+              <div className="space-y-2">
+                {existing.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex justify-between items-center border px-3 py-2 rounded-md text-sm text-black/50"
+                  >
+                    <a href={file.attachmentUrl}>{file.name}</a>
+
+                    <button
+                      type="button"
+                      onClick={() => removeExisting(file.id)}
+                      className="text-red-500 text-xs"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -287,7 +327,6 @@ export default function AddCustomerForm({
           Invite
         </GreenButton>
       </div>
-
     </form>
   );
 }

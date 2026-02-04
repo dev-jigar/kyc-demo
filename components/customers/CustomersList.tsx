@@ -12,6 +12,7 @@ import AddCustomerForm from "./AddCustomerForm";
 import { Modal } from "../comman/Modal";
 import CustomerCardGrid from "./CustomerCardGrid";
 import CustomerFilters from "./CustomerFilters";
+import axios from "axios";
 
 export type CustomerFilterType = "active" | "pending";
 
@@ -51,13 +52,15 @@ export default function CustomersList() {
   const [isDataFetching, setIsDataFetching] = useState(false);
 
   /* ---------- filtering ---------- */
-const filterCounts = useMemo(() => ({
-  active: DEMO_CUSTOMERS.filter(c => c.status === 'ACTIVE').length,
-  pending: DEMO_CUSTOMERS.filter(c =>
-    ['INVITED', 'PENDING'].includes(c.status)
-  ).length,
-}), []);
-
+  const filterCounts = useMemo(
+    () => ({
+      active: DEMO_CUSTOMERS.filter((c) => c.status === "ACTIVE").length,
+      pending: DEMO_CUSTOMERS.filter((c) =>
+        ["INVITED", "PENDING"].includes(c.status),
+      ).length,
+    }),
+    [],
+  );
 
   const filteredCustomers = useMemo(() => {
     let result = DEMO_CUSTOMERS;
@@ -65,16 +68,14 @@ const filterCounts = useMemo(() => ({
     result =
       activeFilter === "active"
         ? result.filter((c) => c.status === "ACTIVE")
-        : result.filter((c) =>
-            ["INVITED", "PENDING"].includes(c.status ?? "")
-          );
+        : result.filter((c) => ["INVITED", "PENDING"].includes(c.status ?? ""));
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (c) =>
           `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q)
+          c.email.toLowerCase().includes(q),
       );
     }
 
@@ -94,9 +95,12 @@ const filterCounts = useMemo(() => ({
   const handleAddCustomer = async (payload: any) => {
     setIsSubmitting(true);
 
-    await new Promise((r) => setTimeout(r, 1000));
+    await axios.post("/api/kyc/invites", payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    console.log("Invite payload:", payload);
 
     setIsSubmitting(false);
     setShowAddModal(false);
@@ -106,19 +110,13 @@ const filterCounts = useMemo(() => ({
 
   return (
     <div className="space-y-6">
-
       <PageHeader
         title="Customers"
         description="Manage customers"
         actions={
           <>
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-            />
-            <Button onClick={() => setShowAddModal(true)}>
-              Add Customer
-            </Button>
+            <SearchInput value={searchQuery} onChange={setSearchQuery} />
+            <Button onClick={() => setShowAddModal(true)}>Add Customer</Button>
           </>
         }
       />
@@ -154,7 +152,6 @@ const filterCounts = useMemo(() => ({
           setIsDataFetching={setIsDataFetching}
         />
       </Modal>
-
     </div>
   );
 }
