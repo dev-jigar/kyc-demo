@@ -39,16 +39,16 @@ async function fetchKycToken(options?: {
 
   const clientId = options?.clientId ?? KYC_CLIENT_ID;
   const clientSecret = options?.clientSecret ?? KYC_CLIENT_SECRET;
-  const scope = options?.scope ?? KYC_DEFAULT_SCOPE ?? 'KYC';
+  const scope = options?.scope ?? KYC_DEFAULT_SCOPE ?? "KYC";
 
   if (!KYC_TOKEN_URL || !clientId || !clientSecret) {
-    throw new Error('Missing KYC credentials');
+    throw new Error("Missing KYC credentials");
   }
 
   try {
-    const basicAuth = Buffer.from(
-      `${clientId}:${clientSecret}`
-    ).toString('base64');
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
+      "base64",
+    );
 
     const resp = await axios.post<{
       data: {
@@ -62,11 +62,11 @@ async function fetchKycToken(options?: {
       },
       {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Basic ${basicAuth}`,
-          accept: 'application/json',
+          accept: "application/json",
         },
-      }
+      },
     );
 
     const token = resp.data.data.access_token;
@@ -80,8 +80,8 @@ async function fetchKycToken(options?: {
     return token;
   } catch (error: any) {
     console.error(
-      '[KYC API] Token fetch failed:',
-      error?.response?.data || error.message
+      "[KYC API] Token fetch failed:",
+      error?.response?.data || error.message,
     );
     throw error;
   }
@@ -204,7 +204,7 @@ export async function sendInvite(payload: {
   message?: string;
 }) {
   console.log("[KYC API] Sending invite:", payload);
-  return kycPost<{ inviteId: string }>("/kyc/invites", payload);
+  return kycPost<{ inviteId: string }>("/kyc/invite", payload);
 }
 
 export async function listConfiguration<T = unknown>(
@@ -215,9 +215,12 @@ export async function listConfiguration<T = unknown>(
   });
 }
 
-export async function getConfiguration<T = unknown>(id: string,  params?: Record<string, any>,) {
+export async function getConfiguration<T = unknown>(
+  id: string,
+  params?: Record<string, any>,
+) {
   console.log("[KYC API] Getting configuration:", id);
-  return kycGet<T>(`/kyc/configuration/${id}`,{params});
+  return kycGet<T>(`/kyc/configuration/${id}`, { params });
 }
 
 export async function deleteInvite(id: string) {
