@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { KycCustomer } from "../kyc-onboarding-sdk/types";
 import { Button } from "../comman/Button";
 import {
@@ -12,33 +12,11 @@ import AddCustomerForm from "./AddCustomerForm";
 import { Modal } from "../comman/Modal";
 import CustomerCardGrid from "./CustomerCardGrid";
 import CustomerFilters from "./CustomerFilters";
+import { useRouter } from "next/navigation";
 
 export type CustomerFilterType = "active" | "pending";
 
 const PAGE_SIZE = 8;
-
-const DEMO_CUSTOMERS: KycCustomer[] = [
-  {
-    id: "fac1",
-    firstName: "Jay",
-    lastName: "Tannir",
-    email: "jay@spark.com",
-    phone: "+91 635112566",
-    status: "ACTIVE",
-    createdAt: "2025-08-20T19:11:00Z",
-    updatedAt: "2025-12-18T13:19:00Z",
-  },
-  {
-    id: "1879",
-    firstName: "Marisa",
-    lastName: "Bernheiser",
-    email: "marisa@gmail.com",
-    phone: "+91 9724812655",
-    status: "INVITED",
-    createdAt: "2025-11-24T11:11:00Z",
-    updatedAt: "2026-01-27T16:39:00Z",
-  },
-];
 
 export default function CustomersList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,67 +24,162 @@ export default function CustomersList() {
     useState<CustomerFilterType>("active");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [activeCustomers, setActiveCustomers] = useState<KycCustomer[]>([]);
+  const [pendingCustomers, setPendingCustomers] = useState<KycCustomer[]>([]);
+
+  const [isLoading, setIsLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDataFetching, setIsDataFetching] = useState(false);
 
-  /* ---------- filtering ---------- */
-const filterCounts = useMemo(() => ({
-  active: DEMO_CUSTOMERS.filter(c => c.status === 'ACTIVE').length,
-  pending: DEMO_CUSTOMERS.filter(c =>
-    ['INVITED', 'PENDING'].includes(c.status)
-  ).length,
-}), []);
+  /* ---------------- Mapping Helpers ---------------- */
 
+  function mapActiveCustomers(apiItems: any[]): KycCustomer[] {
+    return apiItems.map((c) => ({
+      id: c.id,
+      firstName: c.user.firstName,
+      lastName: c.user.lastName,
+      email: c.user.email,
+      phone: c.user.phone,
+      status: "ACTIVE",
+      createdAt: c.createdAt,
+      updatedAt: c.user.updatedAt,
+      userId: c.user.id,
+    }));
+  }
+
+  function mapInvites(apiItems: any[]): KycCustomer[] {
+    return apiItems.map((i) => ({
+      id: i.id,
+      firstName: i.firstName ?? "",
+      lastName: i.lastName ?? "",
+      email: i.email,
+      status: i.status,
+      createdAt: i.createdAt,
+      updatedAt: i.createdAt,
+    }));
+  }
+
+  /* ---------------- Load Data ---------------- */
+
+  async function loadCustomers() {
+    setIsLoading(true);
+
+    try {
+      const [activeRes, inviteRes] = await Promise.all([
+        fetch("/api/kyc/customers"),
+        fetch("/api/kyc/invites"),
+      ]);
+
+      const activeData = await activeRes.json();
+      const inviteData = await inviteRes.json();
+
+      setActiveCustomers(mapActiveCustomers(activeData?.data?.items || []));
+
+      setPendingCustomers(mapInvites(inviteData?.data?.items || []));
+    } catch (err) {
+      console.error("Failed loading customers", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
+  /* ---------------- Counts ---------------- */
+
+  const filterCounts = useMemo(
+    () => ({
+      active: activeCustomers.length,
+      pending: pendingCustomers.length,
+    }),
+    [activeCustomers, pendingCustomers],
+  );
+
+  /* ---------------- Filtering ---------------- */
 
   const filteredCustomers = useMemo(() => {
-    let result = DEMO_CUSTOMERS;
+    let result = activeFilter === "active" ? activeCustomers : pendingCustomers;
 
-    result =
-      activeFilter === "active"
-        ? result.filter((c) => c.status === "ACTIVE")
-        : result.filter((c) =>
-            ["INVITED", "PENDING"].includes(c.status ?? "")
-          );
-
-    if (searchQuery) {
+    if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
+
       result = result.filter(
         (c) =>
           `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q)
+          c.email.toLowerCase().includes(q) ||
+          c.phone?.toLowerCase().includes(q),
       );
     }
 
     return result;
-  }, [searchQuery, activeFilter]);
+  }, [searchQuery, activeFilter, activeCustomers, pendingCustomers]);
+
+  /* ---------------- Pagination ---------------- */
 
   const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE);
+
   const safePage = Math.min(currentPage, totalPages || 1);
 
   const paginatedCustomers = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filteredCustomers.slice(start, start + PAGE_SIZE);
+    const startIndex = (safePage - 1) * PAGE_SIZE;
+    return filteredCustomers.slice(startIndex, startIndex + PAGE_SIZE);
   }, [filteredCustomers, safePage]);
+  const router = useRouter();
 
-  /* ---------- handlers ---------- */
+  /* ---------------- Handlers ---------------- */
+
+  const handleFilterChange = (filter: CustomerFilterType) => {
+    setActiveFilter(filter);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   const handleAddCustomer = async (payload: any) => {
     setIsSubmitting(true);
 
-    await new Promise((r) => setTimeout(r, 1000));
-
     console.log("Invite payload:", payload);
+
+    await new Promise((r) => setTimeout(r, 800));
 
     setIsSubmitting(false);
     setShowAddModal(false);
+    loadCustomers();
   };
 
-  /* ---------- UI ---------- */
+  /* -------- Invite actions -------- */
+
+  const handleResendInvite = async (id: string) => {
+    await fetch(`/api/kyc/invites/${id}/resend`, {
+      method: "PATCH",
+    });
+
+    // loadCustomers();
+  };
+
+  const handleDeleteInvite = async (id: string) => {
+    console.log("Delete invite:", id);
+
+    await fetch(`/api/kyc/invites/${id}`, {
+      method: "DELETE",
+    });
+
+    loadCustomers();
+  };
+  const handleNavigate = async (userId: string) => {
+    router.push(`/kyc/${userId}`);
+  };
+
+  /* ---------------- UI ---------------- */
 
   return (
     <div className="space-y-6">
-
       <PageHeader
         title="Customers"
         description="Manage customers"
@@ -114,9 +187,12 @@ const filterCounts = useMemo(() => ({
           <>
             <SearchInput
               value={searchQuery}
-              onChange={setSearchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search customers..."
+              className="w-64"
             />
-            <Button onClick={() => setShowAddModal(true)}>
+
+            <Button variant="primary" onClick={() => setShowAddModal(true)}>
               Add Customer
             </Button>
           </>
@@ -125,16 +201,29 @@ const filterCounts = useMemo(() => ({
 
       <CustomerFilters
         activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
+        onFilterChange={handleFilterChange}
         counts={filterCounts}
       />
 
-      <CustomerCardGrid customers={paginatedCustomers} />
+      {isLoading ? (
+        <div className="text-center py-10 text-slate-500">
+          Loading customers...
+        </div>
+      ) : (
+        <CustomerCardGrid
+          customers={paginatedCustomers}
+          onResend={handleResendInvite}
+          onDelete={handleDeleteInvite}
+          onClick={handleNavigate}
+        />
+      )}
 
       {filteredCustomers.length > 0 && (
         <PaginationFooter
           currentPage={safePage}
           totalPages={totalPages}
+          totalItems={filteredCustomers.length}
+          itemsPerPage={PAGE_SIZE}
           onPageChange={setCurrentPage}
         />
       )}
@@ -154,7 +243,6 @@ const filterCounts = useMemo(() => ({
           setIsDataFetching={setIsDataFetching}
         />
       </Modal>
-
     </div>
   );
 }

@@ -141,6 +141,7 @@ export async function kycPost<T = unknown>(
       url,
       data,
     });
+    console.log("🚀 ~ kycPost ~ response:", response)
     console.log(`[KYC API] POST ${url} response:`, response);
     return response;
   } catch (error) {
@@ -164,6 +165,26 @@ export async function kycPut<T = unknown>(
     console.log(`[KYC API] PUT ${url}`, data, config);
     const response = await withAuth<T>({ ...config, method: "PUT", url, data });
     console.log(`[KYC API] PUT ${url} response:`, response);
+    return response;
+  } catch (error) {
+    console.error(`[KYC API] PUT ${url} failed:`, error);
+    return {
+      data: { error: `PUT ${url} failed`, details: error },
+      status: 500,
+      statusText: "Internal Server Error",
+      headers: {},
+      config: { ...config, method: "PUT", url, data },
+    } as any;
+  }
+}
+export async function kycPatch<T = unknown>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+) {
+  try {
+    console.log(`[KYC API] PUT ${url}`, data, config);
+    const response = await withAuth<T>({ ...config, method: "PATCH", url, data });
     return response;
   } catch (error) {
     console.error(`[KYC API] PUT ${url} failed:`, error);
@@ -219,15 +240,18 @@ export async function getConfiguration<T = unknown>(id: string,  params?: Record
   console.log("[KYC API] Getting configuration:", id);
   return kycGet<T>(`/kyc/configuration/${id}`,{params});
 }
+export async function getCustomerList<T = unknown>( params?: Record<string, any>,) {
+  return kycGet<T>(`/kyc/customer/list`,{params});
+}
 
 export async function deleteInvite(id: string) {
   console.log("[KYC API] Deleting invite:", id);
-  return kycDelete<void>(`/kyc/invites/${encodeURIComponent(id)}`);
+  return kycDelete<void>(`/kyc/invite/${id}`);
 }
 
 export async function resendInvite(id: string) {
   console.log("[KYC API] Resending invite:", id);
-  return kycPost<void>(`/kyc/invites/${encodeURIComponent(id)}/resend`);
+  return kycPatch<void>(`/kyc/invite/${id}/resend`);
 }
 
 export async function searchInvite<T = unknown>(query: string) {
@@ -242,7 +266,7 @@ export async function listCustomers<T = unknown>() {
 
 export async function getCustomer<T = unknown>(id: string) {
   console.log("[KYC API] Getting customer:", id);
-  return kycGet<T>(`/kyc/customers/${encodeURIComponent(id)}`);
+  return kycGet<T>(`/kyc/customer/${id}`);
 }
 
 export async function listReverificationTypes<T = unknown>() {
