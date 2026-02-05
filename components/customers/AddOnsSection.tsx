@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, SectionTitle, TextInput } from '../kyc-onboarding-sdk/ui';
+import { Card, SectionTitle } from "../kyc-onboarding-sdk/ui";
 
 type AddonState = {
   enabled: boolean;
@@ -10,11 +9,11 @@ type AddonState = {
 };
 
 const RANGE_OPTIONS = [
-  'Last month',
-  'Past 2 months',
-  'Past 3 months',
-  'Past 6 months',
-  'Last 5 years',
+  { label: "Last month", value: "lastMonth" },
+  { label: "Past 2 months", value: "pastTwoMonths" },
+  { label: "Past 3 months", value: "pastThreeMonths" },
+  { label: "Past 6 months", value: "pastSixMonths" },
+  { label: "Last 5 years", value: "lastFiveYears" },
 ];
 
 export default function AddOnsSection({
@@ -32,7 +31,15 @@ export default function AddOnsSection({
   };
 
   const toggle = (key: string) => {
-    update(key, { enabled: !value[key]?.enabled });
+    const current = value[key];
+
+    onChange({
+      ...value,
+      [key]: {
+        ...current,
+        enabled: !current?.enabled,
+      },
+    });
   };
 
   return (
@@ -40,13 +47,12 @@ export default function AddOnsSection({
       <SectionTitle>Enhanced Verifications & Add-Ons</SectionTitle>
 
       <div className="p-4 space-y-4 text-sm">
-
         {/* PEP */}
         <label className="flex items-center gap-2 text-black/50">
           <input
             type="checkbox"
             checked={value.PEP_CHECK?.enabled || false}
-            onChange={() => toggle('PEP_CHECK')}
+            onChange={() => toggle("PEP_CHECK")}
           />
           PEP Check
         </label>
@@ -56,7 +62,7 @@ export default function AddOnsSection({
           <input
             type="checkbox"
             checked={value.SSN_VERIFICATION?.enabled || false}
-            onChange={() => toggle('SSN_VERIFICATION')}
+            onChange={() => toggle("SSN_VERIFICATION")}
           />
           SSN Verification
         </label>
@@ -66,12 +72,8 @@ export default function AddOnsSection({
           <label className="flex items-center gap-2 text-black/50">
             <input
               type="checkbox"
-              checked={
-                value.CRIMINAL_BACKGROUND_CHECK?.enabled || false
-              }
-              onChange={() =>
-                toggle('CRIMINAL_BACKGROUND_CHECK')
-              }
+              checked={value.CRIMINAL_BACKGROUND_CHECK?.enabled || false}
+              onChange={() => toggle("CRIMINAL_BACKGROUND_CHECK")}
             />
             Criminal Background Check
           </label>
@@ -79,41 +81,37 @@ export default function AddOnsSection({
           {value.CRIMINAL_BACKGROUND_CHECK?.enabled && (
             <div className="ml-6 mt-3 space-y-3">
               <div>
-                <div className="text-xs text-slate-500 mb-1">
-                  Select range
-                </div>
+                <div className="text-xs mb-1 text-black/50">Select range</div>
                 <select
-                  value={
-                    value.CRIMINAL_BACKGROUND_CHECK.range || ''
-                  }
+                  value={value.CRIMINAL_BACKGROUND_CHECK.range || ""}
                   onChange={(e) =>
-                    update('CRIMINAL_BACKGROUND_CHECK', {
+                    update("CRIMINAL_BACKGROUND_CHECK", {
                       range: e.target.value,
                     })
                   }
-                  className="border rounded-md px-2 py-1 text-sm"
+                  className="border rounded-md px-2 py-1 text-sm text-black/50"
                 >
                   {RANGE_OPTIONS.map((r) => (
-                    <option key={r}>{r}</option>
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <div className="text-xs text-slate-500 mb-1">
+                <div className="text-xs mb-1 text-black/50">
                   Reason for Request
                 </div>
                 <textarea
                   placeholder="Type your reason here..."
-                  value={
-                    value.CRIMINAL_BACKGROUND_CHECK.reason || ''
-                  }
+                  value={value.CRIMINAL_BACKGROUND_CHECK.reason || ""}
                   onChange={(e) =>
-                    update('CRIMINAL_BACKGROUND_CHECK', {
+                    update("CRIMINAL_BACKGROUND_CHECK", {
                       reason: e.target.value,
                     })
                   }
-                  className="w-full border rounded-md px-3 py-2 text-sm"
+                  className="w-full border rounded-md px-3 py-2 text-sm text-black/50"
                 />
               </div>
             </div>
@@ -124,12 +122,8 @@ export default function AddOnsSection({
         <label className="flex items-center gap-2 text-black/50">
           <input
             type="checkbox"
-            checked={
-              value.BANK_ACCOUNT_VERIFICATION?.enabled || false
-            }
-            onChange={() =>
-              toggle('BANK_ACCOUNT_VERIFICATION')
-            }
+            checked={value.BANK_ACCOUNT_VERIFICATION?.enabled || false}
+            onChange={() => toggle("BANK_ACCOUNT_VERIFICATION")}
           />
           Bank Account Verification
         </label>
@@ -140,27 +134,27 @@ export default function AddOnsSection({
             <input
               type="checkbox"
               checked={value.BANK_STATEMENTS?.enabled || false}
-              onChange={() => toggle('BANK_STATEMENTS')}
+              onChange={() => toggle("BANK_STATEMENTS")}
             />
             Bank Statement Retrieval
           </label>
 
           {value.BANK_STATEMENTS?.enabled && (
             <div className="ml-6 mt-2">
-              <div className="text-xs text-slate-500 mb-1">
-                Select range
-              </div>
+              <div className="text-xs text-black/50 mb-1">Select range</div>
               <select
-                value={value.BANK_STATEMENTS.range || ''}
+                value={value.BANK_STATEMENTS.range || ""}
                 onChange={(e) =>
-                  update('BANK_STATEMENTS', {
+                  update("BANK_STATEMENTS", {
                     range: e.target.value,
                   })
                 }
-                className="border rounded-md px-2 py-1 text-sm"
+                className="border rounded-md px-2 py-1 text-sm text-black/50"
               >
                 {RANGE_OPTIONS.map((r) => (
-                  <option key={r}>{r}</option>
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
                 ))}
               </select>
             </div>

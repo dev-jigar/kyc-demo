@@ -13,6 +13,7 @@ import { Modal } from "../comman/Modal";
 import CustomerCardGrid from "./CustomerCardGrid";
 import CustomerFilters from "./CustomerFilters";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export type CustomerFilterType = "active" | "pending";
 
@@ -145,8 +146,13 @@ export default function CustomersList() {
     setIsSubmitting(true);
 
     console.log("Invite payload:", payload);
+    await axios.post("/api/kyc/invites", payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    await new Promise((r) => setTimeout(r, 800));
+
 
     setIsSubmitting(false);
     setShowAddModal(false);
