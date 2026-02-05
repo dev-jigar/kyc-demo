@@ -1,14 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { searchInvite, sendInvite } from '@/lib/kycApi';
+import { NextRequest, NextResponse } from "next/server";
+import { searchInvite, sendInvite } from "@/lib/kycApi";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get('q') ?? '';
+
+  const search = searchParams.get("search") || undefined;
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const perPage = parseInt(searchParams.get("perPage") || "8", 10);
 
   try {
-    const resp = await searchInvite(q);
-    return NextResponse.json(resp.data ?? resp);
+    const resp = await searchInvite({
+      ...(search ? { email: search } : {}),
+      status: "PENDING",
+      $page: page,
+      $perPage: perPage,
+      $order: "desc", 
+    });
+
+    return NextResponse.json(resp.data);
   } catch (error) {
+    console.error("Invite search error:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
@@ -24,11 +35,4 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Add this configuration
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb', // Adjust as needed (e.g., '4mb', '50mb')
-    },
-  },
-};
+

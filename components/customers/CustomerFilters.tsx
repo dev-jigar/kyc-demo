@@ -3,11 +3,9 @@ type CustomerFilterType = 'active' | 'pending';
 export default function CustomerFilters({
   activeFilter,
   onFilterChange,
-  counts,
 }: {
   activeFilter: CustomerFilterType;
   onFilterChange: (f: CustomerFilterType) => void;
-  counts: Record<CustomerFilterType, number>;
 }) {
   const filters: { key: CustomerFilterType; label: string }[] = [
     { key: 'active', label: 'Active' },
@@ -28,15 +26,6 @@ export default function CustomerFilters({
         >
           {f.label}
 
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
-              activeFilter === f.key
-                ? 'bg-white/20 text-white'
-                : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {counts[f.key]}
-          </span>
         </button>
       ))}
     </div>

@@ -141,7 +141,7 @@ export async function kycPost<T = unknown>(
       url,
       data,
     });
-    console.log("🚀 ~ kycPost ~ response:", response)
+    console.log("🚀 ~ kycPost ~ response:", response);
     console.log(`[KYC API] POST ${url} response:`, response);
     return response;
   } catch (error) {
@@ -184,7 +184,12 @@ export async function kycPatch<T = unknown>(
 ) {
   try {
     console.log(`[KYC API] PUT ${url}`, data, config);
-    const response = await withAuth<T>({ ...config, method: "PATCH", url, data });
+    const response = await withAuth<T>({
+      ...config,
+      method: "PATCH",
+      url,
+      data,
+    });
     return response;
   } catch (error) {
     console.error(`[KYC API] PUT ${url} failed:`, error);
@@ -243,8 +248,11 @@ export async function getConfiguration<T = unknown>(
   console.log("[KYC API] Getting configuration:", id);
   return kycGet<T>(`/kyc/configuration/${id}`, { params });
 }
-export async function getCustomerList<T = unknown>( params?: Record<string, any>,) {
-  return kycGet<T>(`/kyc/customer/list`,{params});
+export async function getCustomerList<T = unknown>(
+  params?: Record<string, any>,
+) {
+  console.log("🚀 ~ getCustomerList ~ params:", params)
+  return kycGet<T>(`/kyc/customer/list`, { params });
 }
 
 export async function deleteInvite(id: string) {
@@ -257,9 +265,9 @@ export async function resendInvite(id: string) {
   return kycPatch<void>(`/kyc/invite/${id}/resend`);
 }
 
-export async function searchInvite<T = unknown>(query: string) {
-  console.log("[KYC API] Searching invites:", query);
-  return kycGet<T>("/kyc/invite/list", { params: { q: query } });
+export async function searchInvite<T = unknown>( params?: Record<string, any>,) {
+  console.log("[KYC API] Searching invites:", params);
+  return kycGet<T>("/kyc/invite/list", { params });
 }
 
 export async function listCustomers<T = unknown>() {

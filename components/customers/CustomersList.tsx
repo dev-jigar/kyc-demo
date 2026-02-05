@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { KycCustomer } from "../kyc-onboarding-sdk/types";
 import { Button } from "../comman/Button";
 import {
@@ -20,20 +20,41 @@ export type CustomerFilterType = "active" | "pending";
 const PAGE_SIZE = 8;
 
 export default function CustomersList() {
+  const router = useRouter();
+
+  /* ---------------- State ---------------- */
+
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
   const [activeFilter, setActiveFilter] =
     useState<CustomerFilterType>("active");
+
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [activeCustomers, setActiveCustomers] = useState<KycCustomer[]>([]);
-  const [pendingCustomers, setPendingCustomers] = useState<KycCustomer[]>([]);
+  const [customers, setCustomers] = useState<KycCustomer[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const [activeCount, setActiveCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDataFetching, setIsDataFetching] = useState(false);
 
-  /* ---------------- Mapping Helpers ---------------- */
+  /* ---------------- Search debounce ---------------- */
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setCurrentPage(1);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  /* ---------------- Mapping ---------------- */
 
   function mapActiveCustomers(apiItems: any[]): KycCustomer[] {
     return apiItems.map((c) => ({
@@ -61,124 +82,124 @@ export default function CustomersList() {
     }));
   }
 
-  /* ---------------- Load Data ---------------- */
-
+  /* ---------------- Load Customers ---------------- */
   async function loadCustomers() {
     setIsLoading(true);
-
     try {
-      const [activeRes, inviteRes] = await Promise.all([
-        fetch("/api/kyc/customers"),
-        fetch("/api/kyc/invites"),
-      ]);
+      const params = new URLSearchParams();
 
-      const activeData = await activeRes.json();
-      const inviteData = await inviteRes.json();
+      // Only add search if it has a value
+      if (searchQuery.trim()) {
+        params.set("search", searchQuery.trim());
+      }
 
-      setActiveCustomers(mapActiveCustomers(activeData?.data?.items || []));
+      params.set("page", String(currentPage));
+      params.set("perPage", String(PAGE_SIZE));
 
-      setPendingCustomers(mapInvites(inviteData?.data?.items || []));
+      const endpoint =
+        activeFilter === "active"
+          ? `/api/kyc/customers?${params}`
+          : `/api/kyc/invites?${params}`;
+
+      const res = await fetch(endpoint);
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const json = await res.json();
+      const payload = json?.data ?? {};
+      const items = payload?.items ?? [];
+      const total = payload?.totalCount;
+
+      const mapped =
+        activeFilter === "active"
+          ? mapActiveCustomers(items)
+          : mapInvites(items);
+
+      setCustomers(mapped);
+      setTotalItems(total);
     } catch (err) {
-      console.error("Failed loading customers", err);
+      console.error("Load customers error:", err);
+      setCustomers([]);
+      setTotalItems(0);
     } finally {
       setIsLoading(false);
     }
   }
 
+  /* ---------------- Load counts (without search) ---------------- */
+  async function loadCounts() {
+    try {
+      const [activeRes, inviteRes] = await Promise.all([
+        fetch(`/api/kyc/customers?page=1&perPage=1`),
+        fetch(`/api/kyc/invites?page=1&perPage=1`),
+      ]);
+
+      if (activeRes.ok) {
+        const activeData = await activeRes.json();
+        setActiveCount(activeData?.data?.total ?? 0);
+      }
+
+      if (inviteRes.ok) {
+        const inviteData = await inviteRes.json();
+        setPendingCount(inviteData?.data?.total ?? 0);
+      }
+    } catch (err) {
+      console.error("Count load error:", err);
+    }
+  }
+
+  /* ---------------- Effects ---------------- */
   useEffect(() => {
     loadCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilter, currentPage, searchQuery]);
+
+  useEffect(() => {
+    loadCounts();
   }, []);
 
-  /* ---------------- Counts ---------------- */
-
-  const filterCounts = useMemo(
-    () => ({
-      active: activeCustomers.length,
-      pending: pendingCustomers.length,
-    }),
-    [activeCustomers, pendingCustomers],
-  );
-
-  /* ---------------- Filtering ---------------- */
-
-  const filteredCustomers = useMemo(() => {
-    let result = activeFilter === "active" ? activeCustomers : pendingCustomers;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-
-      result = result.filter(
-        (c) =>
-          `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          c.phone?.toLowerCase().includes(q),
-      );
-    }
-
-    return result;
-  }, [searchQuery, activeFilter, activeCustomers, pendingCustomers]);
-
-  /* ---------------- Pagination ---------------- */
-
-  const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE);
-
-  const safePage = Math.min(currentPage, totalPages || 1);
-
-  const paginatedCustomers = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-    return filteredCustomers.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredCustomers, safePage]);
-  const router = useRouter();
-
-  /* ---------------- Handlers ---------------- */
-
+  /* ---------------- Updated Handlers ---------------- */
   const handleFilterChange = (filter: CustomerFilterType) => {
     setActiveFilter(filter);
     setCurrentPage(1);
+    setSearchInput(""); // Reset search when switching tabs
+    setSearchQuery("");
   };
+  /* ---------------- Pagination ---------------- */
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setCurrentPage(1);
-  };
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
   const handleAddCustomer = async (payload: any) => {
     setIsSubmitting(true);
 
-    console.log("Invite payload:", payload);
-    await axios.post("/api/kyc/invites", payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-
-
-    setIsSubmitting(false);
-    setShowAddModal(false);
-    loadCustomers();
+    try {
+      await axios.post("/api/kyc/invites", payload);
+      setShowAddModal(false);
+      loadCustomers();
+      loadCounts();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  /* -------- Invite actions -------- */
 
   const handleResendInvite = async (id: string) => {
     await fetch(`/api/kyc/invites/${id}/resend`, {
       method: "PATCH",
     });
-
-    // loadCustomers();
   };
 
   const handleDeleteInvite = async (id: string) => {
-    console.log("Delete invite:", id);
-
     await fetch(`/api/kyc/invites/${id}`, {
       method: "DELETE",
     });
 
     loadCustomers();
+    loadCounts();
   };
-  const handleNavigate = async (userId: string) => {
+
+  const handleNavigate = (userId: string) => {
     router.push(`/kyc/${userId}`);
   };
 
@@ -192,8 +213,8 @@ export default function CustomersList() {
         actions={
           <>
             <SearchInput
-              value={searchQuery}
-              onChange={handleSearchChange}
+              value={searchInput}
+              onChange={setSearchInput}
               placeholder="Search customers..."
               className="w-64"
             />
@@ -208,7 +229,7 @@ export default function CustomersList() {
       <CustomerFilters
         activeFilter={activeFilter}
         onFilterChange={handleFilterChange}
-        counts={filterCounts}
+
       />
 
       {isLoading ? (
@@ -217,18 +238,18 @@ export default function CustomersList() {
         </div>
       ) : (
         <CustomerCardGrid
-          customers={paginatedCustomers}
+          customers={customers}
           onResend={handleResendInvite}
           onDelete={handleDeleteInvite}
           onClick={handleNavigate}
         />
       )}
 
-      {filteredCustomers.length > 0 && (
+      {totalItems > 0 && (
         <PaginationFooter
-          currentPage={safePage}
+          currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={filteredCustomers.length}
+          totalItems={totalItems}
           itemsPerPage={PAGE_SIZE}
           onPageChange={setCurrentPage}
         />
