@@ -1,10 +1,16 @@
 "use client";
 
 import { MoreVertical } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import { Button } from "../comman/Button";
-import type { KycStatus } from "./types";
-import { useRouter } from "next/navigation";
+import type {
+  BaseTextInputProps,
+  FieldProps,
+  KycStatus,
+  TableColumnType,
+  TextInputWithFieldProps
+} from "./types";
 
 export function classNames(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -85,25 +91,51 @@ export function GreenButton({
   );
 }
 
-export function TextInput({
-  placeholder,
+export function Field({ label, required, errorMessage, children }: FieldProps) {
+  return (
+    <div className="space-y-1">
+      {label && (
+        <label className="block text-sm font-medium text-slate-700">
+          {label}
+          {required && <span className="ml-1 text-red-500">*</span>}
+        </label>
+      )}
+
+      {children}
+
+      {errorMessage && <p className="text-xs text-red-600">{errorMessage}</p>}
+    </div>
+  );
+}
+
+export function BaseTextInput({
   value,
   onChange,
+  placeholder,
   type = "text",
-}: {
-  placeholder?: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-}) {
+}: BaseTextInputProps) {
   return (
     <input
       type={type}
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm
+        outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
     />
+  );
+}
+
+export function TextInputWithField({
+  label,
+  required,
+  errorMessage,
+  ...inputProps
+}: TextInputWithFieldProps) {
+  return (
+    <Field label={label} required={required} errorMessage={errorMessage}>
+      <BaseTextInput {...inputProps} />
+    </Field>
   );
 }
 
@@ -193,11 +225,7 @@ export function Table({
   columns,
   children,
 }: {
-  columns: Array<{
-    label: string;
-    align?: "left" | "right" | "center";
-    className?: string;
-  }>;
+  columns: Array<TableColumnType>;
   children: React.ReactNode;
 }) {
   return (
@@ -334,7 +362,7 @@ export function ContactCard({
   closeMenu,
   onResend,
   onDelete,
-  onClick
+  onClick,
 }: any) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -361,14 +389,16 @@ export function ContactCard({
     contact.status === "PENDING" || contact.status === "INVITED";
   const router = useRouter();
 
-
   return (
     <Card>
-      <div className="p-5 transition hover:shadow-md hover:-translate-y-0.5 cursor-pointer" onClick={()=> {
-        if (!isPending) {
-          router.push(`/kyc/${contact.userId}`);
-        }
-      }} >
+      <div
+        className="p-5 transition hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+        onClick={() => {
+          if (!isPending) {
+            router.push(`/kyc/${contact.userId}`);
+          }
+        }}
+      >
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex gap-3 items-center min-w-0">
@@ -384,7 +414,7 @@ export function ContactCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2" >
+          <div className="flex items-center gap-2">
             <StatusPill status={contact.status ?? "ACTIVE"} />
 
             {isPending && (

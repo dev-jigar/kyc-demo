@@ -97,6 +97,7 @@ async function withAuth<T>(config: AxiosRequestConfig, tokenOverride?: string) {
         Authorization: `Bearer ${token}`,
       },
     };
+
     return kycHttp.request<T>(finalConfig);
   } catch (error) {
     console.error("[KYC API] Auth error:", error);
@@ -251,7 +252,6 @@ export async function getConfiguration<T = unknown>(
 export async function getCustomerList<T = unknown>(
   params?: Record<string, any>,
 ) {
-  console.log("🚀 ~ getCustomerList ~ params:", params)
   return kycGet<T>(`/kyc/customer/list`, { params });
 }
 
@@ -265,7 +265,7 @@ export async function resendInvite(id: string) {
   return kycPatch<void>(`/kyc/invite/${id}/resend`);
 }
 
-export async function searchInvite<T = unknown>( params?: Record<string, any>,) {
+export async function searchInvite<T = unknown>(params?: Record<string, any>) {
   console.log("[KYC API] Searching invites:", params);
   return kycGet<T>("/kyc/invite/list", { params });
 }
@@ -282,25 +282,37 @@ export async function getCustomer<T = unknown>(id: string) {
 
 export async function listReverificationTypes<T = unknown>() {
   console.log("[KYC API] Listing reverification types");
-  return kycGet<T>("/kyc/reverifications/types");
+  return kycGet<T>("/kyc/reverification/available/list");
 }
 
-export async function validateReverification<T = unknown>(payload: unknown) {
+export async function validateReverification<T = unknown>(
+  payload: Record<string, unknown>,
+) {
   console.log("[KYC API] Validating reverification:", payload);
-  return kycPost<T>("/kyc/reverifications/validate", payload);
+  return kycPost<T>("/kyc/reverifications/validate-request", payload);
 }
 
-export async function searchReverification<T = unknown>(query: string) {
-  console.log("[KYC API] Searching reverifications:", query);
-  return kycGet<T>("/kyc/reverifications", { params: { q: query } });
+export async function searchReverification<T = unknown>(
+  params?: Record<string, any>,
+) {
+  console.log("[KYC API] Searching reverifications:", params);
+  return kycGet<T>("/kyc/reverification", { params });
 }
 
-export async function cancelReverification(id: string) {
+export async function cancelReverification(id: string, payload: unknown) {
   console.log("[KYC API] Canceling reverification:", id);
-  return kycPost<void>(`/kyc/reverifications/${encodeURIComponent(id)}/cancel`);
+  return kycPut<void>(
+    `/kyc/reverifications/cancel-request/${encodeURIComponent(id)}`,
+    payload,
+  );
 }
 
-export async function getReport<T = unknown>() {
-  console.log("[KYC API] Getting report");
-  return kycGet<T>("/kyc/report");
+export async function getReverification(id: string) {
+  console.log("[KYC API] Getting reverification:", id);
+  return kycGet<void>(`/kyc/reverifications/${encodeURIComponent(id)}`);
+}
+
+export async function getReport<T = unknown>(id: string) {
+  console.log("[KYC API] Getting report:", id);
+  return kycGet<T>(`/kyc/report/${encodeURIComponent(id)}`);
 }

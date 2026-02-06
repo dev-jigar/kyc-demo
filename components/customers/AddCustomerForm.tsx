@@ -3,11 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   GreenButton,
-  TextInput,
+  TextInputWithField,
   Card,
   SectionTitle,
 } from "../kyc-onboarding-sdk/ui";
 import AddOnsSection from "./AddOnsSection";
+import { addCustomerSchema } from "@/schema";
+import { Select } from "../comman/Select";
+import { Option } from "../kyc-onboarding-sdk/types";
 
 type Props = {
   onCancel: () => void;
@@ -34,12 +37,39 @@ export default function AddCustomerForm({
     message: "",
   });
 
-  const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const update = (k: string, v: string) => {
+    setForm((prev) => {
+      const next = { ...prev, [k]: v };
+
+      // validate full form
+      const result = addCustomerSchema.safeParse(next);
+
+      if (result.success) {
+        // form is fully valid → clear this field error
+        setErrors((e) => {
+          const { [k]: _, ...rest } = e;
+          return rest;
+        });
+      } else {
+        // find error for THIS field only
+        const issue = result.error.issues.find((i) => i.path[0] === k);
+
+        setErrors((e) => ({
+          ...e,
+          ...(issue ? { [k]: issue.message } : { [k]: undefined }),
+        }));
+      }
+
+      return next;
+    });
+  };
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [addons, setAddons] = useState<Record<string, any>>({});
   const [configs, setConfigs] = useState<any[]>([]);
-  const [selectedConfig, setSelectedConfig] = useState<string | null>(null);
+  const [selectedConfig, setSelectedConfig] = useState<Option | null>(null);
 
   /* ---------- Load configurations ---------- */
 
@@ -137,6 +167,26 @@ export default function AddCustomerForm({
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
+    const result = addCustomerSchema.safeParse(form);
+
+    if (!result.success) {
+      // Zod errors
+      const fieldErrors: Partial<Record<string, string>> = {};
+
+      result.error.issues.forEach((issue) => {
+        const field = issue?.path?.[0] as string;
+
+        // Only keep first error per field
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = issue.message;
+        }
+      });
+
+      setErrors(fieldErrors);
+      return;
+    }
+    setErrors({});
+
     const payload = {
       ...form,
       // orgId,
@@ -176,28 +226,37 @@ export default function AddCustomerForm({
         <SectionTitle>Details</SectionTitle>
 
         <div className="p-4 grid grid-cols-2 gap-4">
-          <TextInput
+          <TextInputWithField
             placeholder="First Name"
             value={form.firstName}
             onChange={(v) => update("firstName", v)}
+            label="First Name"
+            errorMessage={errors?.["firstName"]}
           />
 
-          <TextInput
+          <TextInputWithField
             placeholder="Last Name"
             value={form.lastName}
             onChange={(v) => update("lastName", v)}
+            label="Last Name"
+            errorMessage={errors?.["lastName"]}
           />
 
-          <TextInput
+          <TextInputWithField
             placeholder="Email"
             value={form.email}
             onChange={(v) => update("email", v)}
+            label="Email"
+            required
+            errorMessage={errors?.["email"]}
           />
 
-          <TextInput
+          <TextInputWithField
             placeholder="Phone"
             value={form.phone}
             onChange={(v) => update("phone", v)}
+            label="Phone"
+            errorMessage={errors?.["phone"]}
           />
         </div>
       </Card>
@@ -207,26 +266,22 @@ export default function AddCustomerForm({
         <SectionTitle>Apply Configuration</SectionTitle>
 
         <div className="p-4">
-          <select
-            value={selectedConfig ?? ""}
-            onChange={(e) => {
-              const id = e.target.value;
-              setSelectedConfig(id);
-              applyConfig(id);
-            }}
-            className="w-full border border-slate-200 rounded-md px-3 py-2 bg-white text-black/70 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="" disabled>
-              Select a configuration
-            </option>
+          <Select
+            value={selectedConfig}
+            placeholder="Select a configuration"
+            onChange={(option: Option) => {
+              if (!option) return;
 
-            {configs.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title?.trim() || "Untitled"} —{" "}
-                {new Date(c.updatedAt).toLocaleDateString()}
-              </option>
-            ))}
-          </select>
+              setSelectedConfig(option);
+              applyConfig(option.value);
+            }}
+            options={configs.map((c) => ({
+              value: c.id,
+              label: `${c.title?.trim() || "Untitled"} · ${new Date(
+                c.updatedAt,
+              ).toLocaleDateString()}`,
+            }))}
+          />
         </div>
       </Card>
 
