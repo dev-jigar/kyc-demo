@@ -20,6 +20,7 @@ import { reverificationSchema } from "@/schema/reverification.schema";
 interface AddReverificationProps {
   onClose: () => void;
   onSubmit: (data: ReverificationFormData) => void;
+  isSubmitting?: boolean;
 }
 
 export interface ReverificationFormData {
@@ -56,6 +57,7 @@ export interface ReverificationFormData {
 const AddReverification: React.FC<AddReverificationProps> = ({
   onClose,
   onSubmit,
+  isSubmitting = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [reverifications, setReverifications] = useState<ReverificationType[]>(
@@ -98,9 +100,6 @@ const AddReverification: React.FC<AddReverificationProps> = ({
     field: keyof ReverificationFormData | "endsType",
     value: any,
   ) => {
-    // Calculate hasMetaData based on the updated state
-    // const updatedReverificationId =
-    //   field === "reverificationId" ? value : prev.reverificationId;
     const currentReverification = reverifications.find((r) => r.id === value);
     const currentHasMetaData =
       currentReverification?.actionId === "CRIMINAL_BACKGROUND_CHECK";
@@ -120,14 +119,12 @@ const AddReverification: React.FC<AddReverificationProps> = ({
       const result = reverificationSchema.safeParse(next);
 
       if (result.success) {
-        console.log("in if condition");
         // Form is fully valid → clear this field error
         setErrors((e) => {
           const { [field]: _, ...rest } = e;
           return rest;
         });
       } else {
-        console.log("in if else condition");
 
         // Find error for THIS field only
         const issue = result.error.issues.find((i) => {
@@ -153,7 +150,6 @@ const AddReverification: React.FC<AddReverificationProps> = ({
           frequency: getReverificationFrequencyOptions(false)[0],
         }));
       }
-      console.log(next, "next");
       return next;
     });
   };
@@ -193,7 +189,6 @@ const AddReverification: React.FC<AddReverificationProps> = ({
         }));
       }
 
-      console.log(result, "result");
       return next;
     });
   };
@@ -234,12 +229,10 @@ const AddReverification: React.FC<AddReverificationProps> = ({
         }
       });
 
-      console.log(fieldErrors, "fieldErrors");
       setErrors(fieldErrors);
       return;
     }
 
-    console.log(result, "result");
     setErrors({});
     const data = result?.data;
     delete data?.endsType;
@@ -257,21 +250,26 @@ const AddReverification: React.FC<AddReverificationProps> = ({
         <>
           <button
             onClick={onClose}
-            className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+            disabled={isSubmitting}
+            className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            disabled={isSubmitting}
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all font-medium shadow-lg shadow-emerald-600/30 hover:shadow-xl hover:shadow-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center gap-2"
           >
-            Send Reverification
+            {isSubmitting && (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            )}
+            <span>{isSubmitting ? "Sending..." : "Send Reverification"}</span>
           </button>
         </>
       }
     >
       {/* Form */}
-      <div className="p-1 space-y-1">
+      <div className="p-1 space-y-4">
         {/* Verification Type and Frequency Row */}
         <div className="grid grid-cols-2 gap-4">
           <SelectWithField
@@ -316,20 +314,6 @@ const AddReverification: React.FC<AddReverificationProps> = ({
 
         {/* Start Date */}
         <div>
-          {/* <label className="block text-sm font-medium text-gray-900 mb-2">
-            Start Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => handleChange("startDate", e.target.value)}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-              errors?.["startDate"] ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors?.["startDate"] && (
-            <p className="mt-1 text-sm text-red-500">{errors["startDate"]}</p>
-          )} */}
           <TextInputWithField
             label="Start Date"
             required
@@ -345,7 +329,7 @@ const AddReverification: React.FC<AddReverificationProps> = ({
           <>
             {/* Repeat On */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
                 Repeat On <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-4">
@@ -374,12 +358,12 @@ const AddReverification: React.FC<AddReverificationProps> = ({
 
             {/* Task Creation */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
                 Task Creation{" "}
-                <span className="text-gray-400 text-xs ml-1">(i)</span>
+                <span className="text-slate-400 text-xs ml-1">(i)</span>
               </label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Create a task</span>
+                <span className="text-sm text-slate-700">Create a task</span>
                 <TextInputWithField
                   value={formData.daysBeforeDueDate || ""}
                   onChange={(value) =>
@@ -388,32 +372,10 @@ const AddReverification: React.FC<AddReverificationProps> = ({
                   placeholder="Enter number"
                   errorMessage={errors?.["daysBeforeDueDate"]}
                 />
-                {/* <input
-                  type="number"
-                  min="0"
-                  placeholder="days"
-                  value={formData.daysBeforeDueDate || ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "daysBeforeDueDate",
-                      parseInt(e.target.value) || undefined,
-                    )
-                  }
-                  className={`w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                    errors?.["daysBeforeDueDate"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                /> */}
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-slate-700">
                   days before the due date
                 </span>
               </div>
-              {/* {errors?.["daysBeforeDueDate"] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors["daysBeforeDueDate"]}
-                </p>
-              )} */}
             </div>
 
             {/* Ends */}

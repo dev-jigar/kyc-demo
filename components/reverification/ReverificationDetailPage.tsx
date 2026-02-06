@@ -26,28 +26,36 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   async function cancelReverification(
     taskId: string,
     cancelRequestType: cancelReverificationType,
   ) {
-    const response = await fetch(`/api/kyc/reverifications/${taskId}/cancel`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        cancelRequestType,
-      }),
-    });
-    const responseData = await response.json();
+    setIsCancelling(true);
+    try {
+      const response = await fetch(`/api/kyc/reverifications/${taskId}/cancel`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cancelRequestType,
+        }),
+      });
+      const responseData = await response.json();
 
-    if (response.ok) {
-      // Refresh the data after successful cancellation
-      loadData();
+      if (response.ok) {
+        // Refresh the data after successful cancellation
+        await loadData();
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error("Failed to cancel reverification:", error);
+    } finally {
+      setIsCancelling(false);
     }
-
-    return responseData;
   }
 
   async function loadData() {
@@ -55,6 +63,8 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
       const res = await fetch(`/api/kyc/reverifications/${id}`);
       const response = await res.json();
       setData(response);
+    } catch (error) {
+      console.error("Failed to load reverification details:", error);
     } finally {
       setLoading(false);
     }
@@ -82,9 +92,15 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600 font-medium text-lg">
+          <p className="text-slate-600 font-medium text-lg mb-2">
             Reverification not found
           </p>
+          <button
+            onClick={() => router.back()}
+            className="text-emerald-600 hover:text-emerald-700 font-medium text-sm"
+          >
+            Go back
+          </button>
         </div>
       </div>
     );
@@ -97,6 +113,7 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
       border: "border-emerald-200",
       icon: CheckCircle2,
       label: "Completed",
+      badgeVariant: "success" as const,
     },
     PENDING: {
       bg: "bg-amber-50",
@@ -104,6 +121,7 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
       border: "border-amber-200",
       icon: Clock,
       label: "Pending",
+      badgeVariant: "warning" as const,
     },
     FAILED: {
       bg: "bg-red-50",
@@ -111,6 +129,7 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
       border: "border-red-200",
       icon: XCircle,
       label: "Failed",
+      badgeVariant: "error" as const,
     },
     CANCELLED: {
       bg: "bg-slate-100",
@@ -118,6 +137,7 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
       border: "border-slate-300",
       icon: Ban,
       label: "Cancelled",
+      badgeVariant: "neutral" as const,
     },
   };
 
@@ -143,10 +163,20 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
             {data.status === "PENDING" && (
               <button
                 onClick={() => setShowCancelModal(true)}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-red-600/30 transition-all hover:shadow-xl hover:shadow-red-600/40 hover:-translate-y-0.5"
+                disabled={isCancelling}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-red-600/30 transition-all hover:shadow-xl hover:shadow-red-600/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg disabled:hover:translate-y-0"
               >
-                <Ban className="w-4 h-4" />
-                <span>Cancel Reverification</span>
+                {isCancelling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-4 h-4" />
+                    <span>Cancel Reverification</span>
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -178,22 +208,27 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
                   {data.reverification?.name}
                 </h1>
                 <p className="text-emerald-50 text-lg mb-4">
-                  {data.reverification?.description}
+                  {data.reverification?.description || "No description available"}
                 </p>
 
                 <div className="flex flex-wrap gap-2">
                   <StatusBadge
                     icon={<StatusIcon className="w-3.5 h-3.5" />}
                     label={currentStatus.label}
-                    variant={
-                      data.status === "COMPLETED" ? "success" : "verified"
-                    }
+                    variant={currentStatus.badgeVariant}
                   />
                   {data.frequency === "RECURRING" && (
                     <StatusBadge
                       icon={<RefreshCw className="w-3.5 h-3.5" />}
                       label="Recurring"
-                      variant="verified"
+                      variant="info"
+                    />
+                  )}
+                  {data.frequency === "ONE_TIME" && (
+                    <StatusBadge
+                      icon={<Play className="w-3.5 h-3.5" />}
+                      label="One Time"
+                      variant="info"
                     />
                   )}
                 </div>
@@ -247,7 +282,19 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
             >
               <div className="grid sm:grid-cols-2 gap-4">
                 <InfoItem label="Type" value={data.type} />
-                <InfoItem label="Status" value={data.status} />
+                <InfoItem 
+                  label="Status" 
+                  value={
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                      data.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                      data.status === 'PENDING' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                      data.status === 'FAILED' ? 'bg-red-100 text-red-700 border border-red-200' :
+                      'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}>
+                      {data.status}
+                    </span>
+                  }
+                />
                 <InfoItem
                   label="Start Date"
                   value={new Date(data.startDate).toLocaleDateString()}
@@ -268,7 +315,7 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
                       value={
                         data.endDate
                           ? new Date(data.endDate).toLocaleDateString()
-                          : "—"
+                          : "No end date"
                       }
                     />
                   </>
@@ -295,9 +342,10 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
                   )}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-8">
-                  No occurrences scheduled
-                </p>
+                <div className="text-center py-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border-2 border-dashed border-slate-200">
+                  <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 font-medium">No occurrences scheduled</p>
+                </div>
               )}
             </InfoCard>
           </div>
@@ -310,18 +358,22 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
               icon={<Shield className="w-5 h-5" />}
             >
               <div className="space-y-3">
-                {/* <DetailRow
-                  label="Reverification ID"
-                  value={data.reverification?.id?.slice(0, 12) + "..."}
-                /> */}
                 <DetailRow label="Type" value={data.reverification?.type} />
                 <DetailRow
                   label="Action ID"
                   value={data.reverification?.actionId}
                 />
                 <DetailRow
-                  label="Recurring"
-                  value={data.reverification?.isRecurringEnabled ? "Yes" : "No"}
+                  label="Recurring Enabled"
+                  value={
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                      data.reverification?.isRecurringEnabled 
+                        ? 'bg-emerald-100 text-emerald-700' 
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {data.reverification?.isRecurringEnabled ? "Yes" : "No"}
+                    </span>
+                  }
                 />
                 <DetailRow
                   label="Created"
@@ -358,7 +410,10 @@ export default function ReverificationDetailPage({ id }: { id: string }) {
 function StatusBadge({ icon, label, variant }: any) {
   const variants = {
     success: "bg-emerald-400/90 text-white border-emerald-300/50",
-    verified: "bg-white/25 text-white border-white/30",
+    warning: "bg-amber-400/90 text-white border-amber-300/50",
+    error: "bg-red-400/90 text-white border-red-300/50",
+    neutral: "bg-slate-400/90 text-white border-slate-300/50",
+    info: "bg-white/25 text-white border-white/30",
   };
 
   return (
@@ -405,7 +460,7 @@ function InfoItem({ label, value }: any) {
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
         {label}
       </p>
-      <p className="font-medium text-slate-800">{value || "—"}</p>
+      <div className="font-medium text-slate-800">{value || "—"}</div>
     </div>
   );
 }
@@ -427,50 +482,66 @@ function OccurrenceCard({ occurrence, index }: any) {
       bg: "bg-emerald-50",
       text: "text-emerald-700",
       border: "border-emerald-200",
+      icon: CheckCircle2,
     },
     PENDING: {
       bg: "bg-amber-50",
       text: "text-amber-700",
       border: "border-amber-200",
+      icon: Clock,
     },
-    FAILED: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
+    FAILED: { 
+      bg: "bg-red-50", 
+      text: "text-red-700", 
+      border: "border-red-200",
+      icon: XCircle,
+    },
   };
 
   const config =
     statusConfig[occurrence.status as keyof typeof statusConfig] ||
     statusConfig.PENDING;
+  
+  const StatusIcon = config.icon;
 
   return (
-    <div className={`border-2 ${config.border} ${config.bg} rounded-xl p-5`}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-bold text-slate-900">
-          Occurrence #{index + 1}
-        </span>
+    <div className={`border-2 ${config.border} ${config.bg} rounded-xl p-5 hover:shadow-md transition-shadow`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`${config.bg} border ${config.border} rounded-full p-1.5`}>
+            <StatusIcon className={`w-4 h-4 ${config.text}`} />
+          </div>
+          <span className="font-bold text-slate-900">
+            Occurrence #{index + 1}
+          </span>
+        </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-bold ${config.text} ${config.bg} border ${config.border}`}
+          className={`px-3 py-1 rounded-full text-xs font-bold ${config.text} border ${config.border}`}
         >
           {occurrence.status}
         </span>
       </div>
 
       <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-slate-600">Task Created:</span>
+        <div className="flex justify-between items-center">
+          <span className="text-slate-600 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            Task Created:
+          </span>
           <span className="font-medium text-slate-900">
             {new Date(occurrence.taskCreationDate).toLocaleDateString()}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-slate-600">Due Date:</span>
+        <div className="flex justify-between items-center">
+          <span className="text-slate-600 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            Due Date:
+          </span>
           <span className="font-medium text-slate-900">
             {new Date(occurrence.taskDueDate).toLocaleDateString()}
           </span>
         </div>
       </div>
-
-      {/* <button className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold text-sm transition-colors">
-        Touch Audit
-      </button> */}
     </div>
   );
 }

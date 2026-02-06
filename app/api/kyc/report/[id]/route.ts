@@ -13,7 +13,6 @@ export async function GET(
     const response = await getReport(id);
     const base64 = response.data?.data?.response;
 
-    console.log(base64.res, "base64");
 
     const cleanBase64 = base64.split(",").pop()!;
     const pdfBuffer = Buffer.from(cleanBase64, "base64");
