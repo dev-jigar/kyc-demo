@@ -25,6 +25,7 @@ import {
   Check,
 } from "lucide-react";
 import { ReverificationListPage } from "@/components/reverification/ReverificationList";
+import { Button } from "@/components/comman/Button";
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,11 +33,13 @@ export default function CustomerDetailPage() {
 
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [btnLoading, setBtnLoading] = useState(false);
 
   const downloadReport = useCallback(async () => {
     try {
       const user = customer.user;
       const name = `${user.firstName} ${user.lastName}`;
+      setBtnLoading(true)
 
       const res = await fetch(
         `/api/kyc/report/${id}?name=${encodeURIComponent(name)}`,
@@ -46,11 +49,15 @@ export default function CustomerDetailPage() {
       );
 
       if (!res.ok) {
+      setBtnLoading(false)
+
         throw new Error("Failed to download PDF");
       }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
+      setBtnLoading(false)
+
       const a = document.createElement("a");
       a.href = url;
       a.download = `${name}.pdf`;
@@ -58,7 +65,10 @@ export default function CustomerDetailPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
     } catch (err) {
+      setBtnLoading(false)
+
       console.error("Download failed", err);
     }
   }, [customer]);
@@ -116,13 +126,14 @@ export default function CustomerDetailPage() {
             <span className="font-medium">Back to Customers</span>
           </button>
 
-          <button
+          <Button
             onClick={downloadReport}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm transition-all"
+            isLoading={btnLoading}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-emerald-600/30 transition-all hover:shadow-xl hover:shadow-emerald-600/40 hover:-translate-y-0.5"
           >
             <Download className="w-4 h-4" />
-            Download KYC Report
-          </button>
+            <span>Download KYC Report</span>
+          </Button>
         </div>
 
         {/* Profile Header Card */}
