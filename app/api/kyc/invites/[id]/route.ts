@@ -3,12 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = params.id;
-
-    console.log("🗑 Deleting invite:", id);
+    const { id } = await context.params;
 
     const resp = await deleteInvite(id);
 

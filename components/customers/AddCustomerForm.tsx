@@ -71,11 +71,10 @@ export default function AddCustomerForm({
   const [configs, setConfigs] = useState<any[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<Option | null>(null);
 
-  /* ---------- Load configurations ---------- */
-
   const [existing, setExisting] = useState<any[]>([]);
-
   const [attachments, setAttachments] = useState<any[]>([]);
+
+  /* ---------- File Helpers ---------- */
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -112,6 +111,8 @@ export default function AddCustomerForm({
     setExisting((prev) => prev.filter((f) => f.id !== id));
   };
 
+  /* ---------- Load configurations ---------- */
+
   useEffect(() => {
     async function loadConfigs() {
       try {
@@ -122,7 +123,6 @@ export default function AddCustomerForm({
         });
 
         const data = await res.json();
-
         setConfigs(data?.data?.items ?? []);
       } finally {
         setIsDataFetching(false);
@@ -132,7 +132,7 @@ export default function AddCustomerForm({
     loadConfigs();
   }, []);
 
-  /* ---------- Apply config (API call) ---------- */
+  /* ---------- Apply config ---------- */
 
   const applyConfig = async (configId: string) => {
     try {
@@ -144,7 +144,6 @@ export default function AddCustomerForm({
       );
 
       const config = await res.json();
-
       const mapped: any = {};
 
       config?.data.groupedAddOns?.forEach((group: any) => {
@@ -164,6 +163,7 @@ export default function AddCustomerForm({
   };
 
   /* ---------- Submit ---------- */
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
@@ -189,8 +189,6 @@ export default function AddCustomerForm({
 
     const payload = {
       ...form,
-      // orgId,
-      // groupIds: [customerGroupId],
 
       addons: Object.entries(addons)
         .filter(([, v]) => v.enabled)
@@ -201,17 +199,15 @@ export default function AddCustomerForm({
           }),
         })),
 
-      // selectedConfig,
-
       attachments: attachments.map(({ name, data }) => ({
         name,
-        data, // base64 string (no prefix)
+        data,
       })),
 
       invitedBy: "adebd2e3-391b-4af8-aad9-990b74cb702d",
 
       ...(existing.length > 0 && {
-        existing: existing.map((attachment) => attachment.id),
+        existing: existing.map((a) => a.id),
       }),
     };
 
@@ -315,71 +311,48 @@ export default function AddCustomerForm({
             Add Files
           </GreenButton>
 
-          {/* NEW UPLOADS */}
           {attachments.length > 0 && (
-            <div className="mt-6 text-left">
-              <p className="text-xs font-semibold text-slate-600 mb-2">
-                New Attachments
-              </p>
+            <div className="mt-6 text-left space-y-2">
+              {attachments.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex justify-between items-center border px-3 py-2 rounded-md text-sm"
+                >
+                  <span className="truncate">{file.name}</span>
 
-              <div className="space-y-2">
-                {attachments.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex justify-between items-center border px-3 py-2 rounded-md text-sm text-black/50"
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(file.id)}
+                    className="text-red-500 text-xs"
                   >
-                    <span className="truncate">{file.name}</span>
-
-                    <button
-                      type="button"
-                      onClick={() => removeAttachment(file.id)}
-                      className="text-red-500 text-xs"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* EXISTING FILES */}
-          {existing.length > 0 && (
-            <div className="mt-6 text-left">
-              <p className="text-xs font-semibold text-slate-600 mb-2">
-                Existing Attachments
-              </p>
-
-              <div className="space-y-2">
-                {existing.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex justify-between items-center border px-3 py-2 rounded-md text-sm text-black/50"
-                  >
-                    <a href={file.attachmentUrl}>{file.name}</a>
-
-                    <button
-                      type="button"
-                      onClick={() => removeExisting(file.id)}
-                      className="text-red-500 text-xs"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
+                    Remove
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
       </Card>
 
+      {/* ACTIONS */}
       <div className="flex justify-end gap-3">
-        <GreenButton variant="outline" onClick={onCancel}>
+        <GreenButton
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+        >
           Cancel
         </GreenButton>
 
-        <GreenButton type="submit" disabled={isLoading}>
-          Invite
+        <GreenButton
+          type="submit"
+          disabled={isLoading}
+          className="flex items-center gap-2 justify-center min-w-[120px]"
+        >
+          {isLoading && (
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          )}
+          {isLoading ? "Inviting..." : "Invite"}
         </GreenButton>
       </div>
     </form>

@@ -7,7 +7,6 @@ export async function PATCH(
 ) {
   try {
     const { id } = await context.params;
-    console.log("🚀 ~ POST ~ id:", id)
 
     const resp = await resendInvite(id);
 

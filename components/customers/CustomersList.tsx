@@ -14,6 +14,7 @@ import CustomerCardGrid from "./CustomerCardGrid";
 import CustomerFilters from "./CustomerFilters";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export type CustomerFilterType = "active" | "pending";
 
@@ -171,33 +172,54 @@ export default function CustomersList() {
 
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
-  const handleAddCustomer = async (payload: any) => {
-    setIsSubmitting(true);
+const handleAddCustomer = async (payload: any) => {
+  setIsSubmitting(true);
 
-    try {
-      await axios.post("/api/kyc/invites", payload);
-      setShowAddModal(false);
-      loadCustomers();
-      loadCounts();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  try {
+    const res = await axios.post("/api/kyc/invites", payload);
 
-  const handleResendInvite = async (id: string) => {
-    await fetch(`/api/kyc/invites/${id}/resend`, {
-      method: "PATCH",
-    });
-  };
+    toast.success("Customer invite sent successfully");
 
-  const handleDeleteInvite = async (id: string) => {
-    await fetch(`/api/kyc/invites/${id}`, {
+    setShowAddModal(false);
+    loadCustomers();
+    loadCounts();
+  } catch (err) {
+    toast.error("Failed to send invite");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+const handleResendInvite = async (id: string) => {
+  try {
+    const res = await axios.patch(`/api/kyc/invites/${id}/resend`);
+
+    if (!res.status) throw new Error();
+
+    toast.success("Invite resent successfully");
+  } catch {
+    toast.error("Failed to resend invite");
+  }
+};
+
+
+const handleDeleteInvite = async (id: string) => {
+  try {
+    const res = await fetch(`/api/kyc/invites/${id}`, {
       method: "DELETE",
     });
 
+    if (!res.ok) throw new Error();
+
+    toast.success("Invite deleted successfully");
+
     loadCustomers();
     loadCounts();
-  };
+  } catch {
+    toast.error("Failed to delete invite");
+  }
+};
 
   const handleNavigate = (userId: string) => {
     router.push(`/kyc/${userId}`);
