@@ -71,6 +71,7 @@ export const ReverificationListPage = ({
       },
       body: JSON.stringify({
         ...payload,
+        recipientId: recipientId,
         requestedBy: "adebd2e3-391b-4af8-aad9-990b74cb702d",
       }),
     });

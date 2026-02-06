@@ -64,14 +64,14 @@ const AddReverification: React.FC<AddReverificationProps> = ({
   const [formData, setFormData] = useState<
     ReverificationFormData & { endsType: endsTyp }
   >({
-    reverificationId: "",
+    reverificationId: undefined,
     frequency: undefined,
     startDate: new Date().toISOString().split("T")[0],
-    repeatOn: "",
+    repeatOn: undefined,
     repeatOnUnit: undefined,
     daysBeforeDueDate: undefined,
-    endOccurrence: "",
-    endDate: "",
+    endOccurrence: undefined,
+    endDate: undefined,
     metadata: undefined,
     endsType: undefined,
   });
@@ -193,6 +193,7 @@ const AddReverification: React.FC<AddReverificationProps> = ({
         }));
       }
 
+      console.log(result, "result");
       return next;
     });
   };
@@ -233,13 +234,16 @@ const AddReverification: React.FC<AddReverificationProps> = ({
         }
       });
 
+      console.log(fieldErrors, "fieldErrors");
       setErrors(fieldErrors);
       return;
     }
 
     console.log(result, "result");
     setErrors({});
-    onSubmit(formData);
+    const data = result?.data;
+    delete data?.endsType;
+    onSubmit(data as unknown as ReverificationFormData);
   };
 
   return (
@@ -267,7 +271,7 @@ const AddReverification: React.FC<AddReverificationProps> = ({
       }
     >
       {/* Form */}
-      <div className="p-3 space-y-3">
+      <div className="p-1 space-y-1">
         {/* Verification Type and Frequency Row */}
         <div className="grid grid-cols-2 gap-4">
           <SelectWithField
@@ -438,7 +442,7 @@ const AddReverification: React.FC<AddReverificationProps> = ({
                     selectedValues.ends?.value === endsTyp.occurrence
                       ? "endOccurrence"
                       : "endDate",
-                    "",
+                    undefined,
                   );
                 }}
                 errorMessage={errors?.["endsType"]}
@@ -449,7 +453,7 @@ const AddReverification: React.FC<AddReverificationProps> = ({
                     value={
                       selectedValues.ends?.value === endsTyp.occurrence
                         ? formData.endOccurrence
-                        : formData.endDate || ""
+                        : formData.endDate
                     }
                     onChange={(value) =>
                       handleChange(

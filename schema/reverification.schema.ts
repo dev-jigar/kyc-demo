@@ -57,68 +57,58 @@ const oneTimeSchema = baseSchema.extend({
 /* ------------------------------------------------------------------ */
 /* RECURRING */
 /* ------------------------------------------------------------------ */
-const recurringSchema = baseSchema
+const recurringBaseSchema = baseSchema.extend({
+  frequency: z.literal(ReverificationFrequency.Recurring),
+
+  repeatOn: z.coerce
+    .number("Repeat interval is required")
+    .int("Repeat interval must be a whole number")
+    .positive("Repeat interval must be greater than 0"),
+
+  repeatOnUnit: z.nativeEnum(
+    reverificationRepeatUnit,
+    "Repeat unit is required",
+  ),
+
+  metadata: z.undefined(),
+});
+
+const recurringByOccurrenceSchema = recurringBaseSchema.extend({
+  endsType: z.literal(endsTyp.occurrence),
+
+  endOccurrence: z.coerce
+    .number("Occurrence is required")
+    .int("Occurrence must be a whole number")
+    .min(2, "Occurrence must be greater than 1"),
+
+  endDate: z.undefined(),
+});
+
+const recurringByDateSchema = recurringBaseSchema
   .extend({
-    frequency: z.literal(ReverificationFrequency.Recurring),
+    endsType: z.literal(endsTyp.date),
 
-    repeatOn: z
-      .string()
-      .trim()
-      .min(1, "Repeat interval is required")
-      .regex(/^\d+$/, "Repeat interval must be a valid number"),
+    endDate: z.coerce.date("Invalid date format"),
 
-    repeatOnUnit: z.nativeEnum(
-      reverificationRepeatUnit,
-      "Repeat unit is required",
-    ),
-
-    endsType: z.nativeEnum(endsTyp, "Ends type is required"),
-
-    endOccurrence: z.string().trim().default(""),
-    endDate: z.string().trim().default(""),
-
-    metadata: z.undefined(),
+    endOccurrence: z.undefined(),
   })
-  .superRefine((data, ctx) => {
-    if (data.endsType === endsTyp.occurrence) {
-      if (!data.endOccurrence) {
-        ctx.addIssue({
-          path: ["endOccurrence"],
-          message: "Occurrence is required",
-          code: z.ZodIssueCode.custom,
-        });
-      } else if (!/^\d+$/.test(data.endOccurrence)) {
-        ctx.addIssue({
-          path: ["endOccurrence"],
-          message: "Must be a valid number",
-          code: z.ZodIssueCode.custom,
-        });
-      }
-    }
-
-    if (data.endsType === endsTyp.date) {
-      if (!data.endDate) {
-        ctx.addIssue({
-          path: ["endDate"],
-          message: "End date is required",
-          code: z.ZodIssueCode.custom,
-        });
-      } else if (isNaN(Date.parse(data.endDate))) {
-        ctx.addIssue({
-          path: ["endDate"],
-          message: "Invalid date format",
-          code: z.ZodIssueCode.custom,
-        });
-      } else if (new Date(data.endDate) <= new Date(data.startDate)) {
-        ctx.addIssue({
-          path: ["endDate"],
-          message: "End date must be after start date",
-          code: z.ZodIssueCode.custom,
-        });
-      }
-    }
+  .refine((data) => data.endDate > new Date(data.startDate), {
+    path: ["endDate"],
+    message: "End date must be after start date",
   });
 
+const recurringByNeverSchema = recurringBaseSchema.extend({
+  endsType: z.literal(endsTyp.never),
+
+  endDate: z.undefined(),
+  endOccurrence: z.undefined(),
+});
+
+const recurringSchema = z.discriminatedUnion("endsType", [
+  recurringByOccurrenceSchema,
+  recurringByDateSchema,
+  recurringByNeverSchema,
+]);
 /* ------------------------------------------------------------------ */
 /* FINAL SCHEMA */
 /* ------------------------------------------------------------------ */
