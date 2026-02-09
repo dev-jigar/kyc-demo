@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { ReverificationListPage } from "@/components/reverification/ReverificationList";
 import { Button } from "@/components/comman/Button";
+import { VdtCards } from "@/components/individualVDTCards";
+import { AttachmentsCard } from "@/components/customers/Attechments";
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,7 +41,7 @@ export default function CustomerDetailPage() {
     try {
       const user = customer.user;
       const name = `${user.firstName} ${user.lastName}`;
-      setBtnLoading(true)
+      setBtnLoading(true);
 
       const res = await fetch(
         `/api/kyc/report/${id}?name=${encodeURIComponent(name)}`,
@@ -49,14 +51,14 @@ export default function CustomerDetailPage() {
       );
 
       if (!res.ok) {
-      setBtnLoading(false)
+        setBtnLoading(false);
 
         throw new Error("Failed to download PDF");
       }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-      setBtnLoading(false)
+      setBtnLoading(false);
 
       const a = document.createElement("a");
       a.href = url;
@@ -65,9 +67,8 @@ export default function CustomerDetailPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
     } catch (err) {
-      setBtnLoading(false)
+      setBtnLoading(false);
 
       console.error("Download failed", err);
     }
@@ -409,8 +410,12 @@ export default function CustomerDetailPage() {
               </div>
             </div>
           </div>
-
-          {/* Reverification - Full Width */}
+          <div>
+            <VdtCards userId={user.id} />
+          </div>
+          <div>
+            <AttachmentsCard userId={user.id} />
+          </div>
           <div>
             <ReverificationListPage recipientId={user.id} />
           </div>

@@ -1,4 +1,5 @@
-import { Option } from "@/components/comman/Select";
+import { Option } from "@/components/kyc-onboarding-sdk/types";
+import dayjs from "dayjs";
 import { StylesConfig } from "react-select";
 
 export const KYC_ADDONS = [
@@ -72,3 +73,13 @@ export const defaultStyles: StylesConfig<Option, boolean> = {
     },
   }),
 };
+
+export function formatDate(date?: string | null | Date, format?: string) {
+  try {
+    if (!date || date == 'null') return '-';
+    return dayjs(new Date(date)).format(format ?? 'MM/DD/YYYY');
+  } catch (error) {
+    console.error(error);
+    return '-';
+  }
+}

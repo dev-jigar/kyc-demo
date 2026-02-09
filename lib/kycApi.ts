@@ -316,3 +316,13 @@ export async function getReport<T = unknown>(id: string) {
   console.log("[KYC API] Getting report:", id);
   return kycGet<T>(`/kyc/report/${encodeURIComponent(id)}`);
 }
+
+export async function getLedgerData<T = unknown>(id: string) {
+  console.log("[KYC API] Getting customer ledger data:", id);
+  return kycGet<T>(`/kyc/read-ledger?entityId=${id}`);
+}
+
+export async function getDocuments<T = unknown>(id: string) {
+  console.log("[KYC API] Getting Documents:", id);
+  return kycGet<T>(`/kyc/invite/documents/${encodeURIComponent(id)}`);
+}
