@@ -6,12 +6,17 @@ export type NavItem = {
 
 export const SIDEBAR_NAV: NavItem[] = [
   {
-    key: 'kyc',
-    label: 'KYC',
+    key: "kyc",
+    label: "KYC",
     children: [
-      { key: 'kyc-customers', label: 'Customers' },
-      { key: 'kyc-configurations', label: 'Configurations' },
-      { key: 'kyc-reports', label: 'Reports' },
+      { key: "kyc-customers", label: "Customers" },
+      { key: "kyc-configurations", label: "Configurations" },
+      { key: "kyc-reports", label: "Reports" },
     ],
+  },
+  {
+    key: "product",
+    label: "PRODUCT",
+    children: [{ key: "product", label: "Product" }],
   },
 ];

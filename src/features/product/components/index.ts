@@ -1,2 +1,1 @@
-export * from "./kyc";
 export * from "./product";

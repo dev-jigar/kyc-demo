@@ -43,10 +43,7 @@ export function KycShell({
             {/* <div className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Products</div> */}
             <nav className="mt-2 space-y-1">
               {productItems.map((item) => {
-                const active =
-                  item.key === activeKey ||
-                  (item.key === "kyc" && activeKey.startsWith("kyc-"));
-                const isKycParent = item.key === "kyc";
+                const active = activeKey.includes(item.key);
                 return (
                   <button
                     key={item.key}
@@ -60,25 +57,22 @@ export function KycShell({
                         : "text-slate-200 hover:bg-slate-700",
                     )}
                   >
-                    {isKycParent ? (
+                    <span
+                      className={classNames(
+                        "grid h-8 w-8 place-items-center rounded-md",
+                        active ? "bg-white/15" : "bg-slate-700",
+                      )}
+                    >
                       <span
                         className={classNames(
-                          "grid h-8 w-8 place-items-center rounded-md",
-                          active ? "bg-white/15" : "bg-slate-700",
+                          "text-xs font-black",
+                          active ? "text-white" : "text-slate-200",
                         )}
                       >
-                        <span
-                          className={classNames(
-                            "text-xs font-black",
-                            active ? "text-white" : "text-slate-200",
-                          )}
-                        >
-                          K
-                        </span>
+                        {item.label?.charAt(0).toUpperCase()}
                       </span>
-                    ) : (
-                      <IconDot active={active} />
-                    )}
+                    </span>
+
                     {item.label}
                   </button>
                 );

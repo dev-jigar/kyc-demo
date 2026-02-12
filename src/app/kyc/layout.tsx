@@ -1,21 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { SIDEBAR_NAV } from "@/src/utils/sidebar.config";
-import { KycShell } from "@/src/features";
+import { AppShellLayout } from "../appLayout";
 
 export default function KycLayout({ children }: { children: React.ReactNode }) {
-  const [activeKey, setActiveKey] = useState("kyc-customers");
-
   return (
-    <KycShell
-      activeKey={activeKey}
-      onNavigate={setActiveKey}
-      breadcrumb={["KYC"]}
-      title="KYC"
-      navigation={SIDEBAR_NAV}
-    >
+    <AppShellLayout breadcrumb={["KYC"]} title="KYC">
       {children}
-    </KycShell>
+    </AppShellLayout>
   );
 }
