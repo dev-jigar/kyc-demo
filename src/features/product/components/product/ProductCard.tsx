@@ -42,17 +42,16 @@ export function ProductCard({
 
   return (
     <div className="relative rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
-      {/* Thumbnail */}
-      <div className="h-40 w-full overflow-hidden rounded-t-xl bg-slate-100">
+      <div className="w-full rounded-2xl bg-slate-100">
         {product.pathUrl || product.thumbnailPath ? (
           <img
             src={product.pathUrl || product.thumbnailPath}
             alt={product.name}
-            className="h-full w-full object-cover"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-slate-400 text-sm">
-            No Image
+          <div className="flex flex-col items-center justify-center h-[350px] width-[350px] text-slate-400">
+            <p className="text-sm font-medium">No Image Available</p>
           </div>
         )}
       </div>
@@ -78,7 +77,7 @@ export function ProductCard({
               <div className="absolute right-0 mt-2 w-32 rounded-md border bg-white shadow-lg z-20">
                 <button
                   onClick={() => onView(product.eventId, product.userId)}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-100"
+                  className="block w-full px-3 py-2 text-left text-s"
                 >
                   View
                 </button>

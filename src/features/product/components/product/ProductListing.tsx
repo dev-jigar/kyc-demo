@@ -10,10 +10,9 @@ import {
   Modal,
 } from "@/src/components";
 import { ProductCardGrid } from "./ProductCardGrid";
-import { formatDate } from "@/src/utils";
 import { ProductDetailsView } from "./ProductDetailsView";
-// import { ProductCardGrid } from "./ProductCardGrid";
-// import { AddProductForm } from "./AddProductForm";
+import CreateItemForm from "./AddProduct";
+import { Product, ProductDetails } from "../../types";
 
 const PAGE_SIZE = 9;
 
@@ -25,60 +24,12 @@ export function ProductsList() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [products, setProducts] = useState<any[]>([
-    {
-      id: "1",
-      userId: "user-101",
-      thumbnailPath: "/images/product1.jpg",
-      pathUrl: "https://picsum.photos/400/300?random=1",
-      name: "Premium Membership Package",
-      eventId: "event-001",
-      orgId: "org-100",
-      orgName: "Black Ink Technologies",
-      entityId: "entity-500",
-      type: "PVDT",
-      tags: ["membership", "premium"],
-      createdAt: "2026-02-10T10:30:00.000Z",
-      isSystemGenerated: false,
-      itemsCount: 12,
-    },
-    {
-      id: "2",
-      userId: "user-102",
-      thumbnailPath: "/images/product2.jpg",
-      pathUrl: "https://picsum.photos/400/300?random=2",
-      name: "Event Ticket Listing",
-      eventId: "event-002",
-      orgId: "org-200",
-      orgName: "Global Events Inc",
-      entityId: "entity-501",
-      type: "PRODUCT_LISTING",
-      tags: ["event", "ticket"],
-      createdAt: "2026-02-09T14:15:00.000Z",
-      isSystemGenerated: false,
-      itemsCount: 5,
-    },
-    {
-      id: "3",
-      userId: "user-103",
-      thumbnailPath: "/images/product3.jpg",
-      pathUrl: "https://picsum.photos/400/300?random=3",
-      name: "Escrow Transfer Product",
-      orgId: "org-300",
-      orgName: "Secure Finance Ltd",
-      type: "PRODUCT_ESCROW_TRANSFER",
-      tags: ["escrow", "finance"],
-      createdAt: "2026-02-08T09:00:00.000Z",
-      isSystemGenerated: true,
-      itemsCount: 20,
-    },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [totalItems, setTotalItems] = useState(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetails>(null);
   const [showViewModal, setShowViewModal] = useState(false);
 
   /* ---------------- Search debounce ---------------- */
@@ -94,7 +45,7 @@ export function ProductsList() {
 
   /* ---------------- Load Products ---------------- */
 
-  async function loadProducts() {
+  const loadProducts = async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -105,7 +56,6 @@ export function ProductsList() {
 
       params.set("page", String(currentPage));
       params.set("perPage", String(PAGE_SIZE));
-
       const res = await fetch(`/api/product/list-products?${params}`);
 
       if (!res.ok) {
@@ -124,7 +74,7 @@ export function ProductsList() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   /* ---------------- Effects ---------------- */
 
@@ -135,33 +85,6 @@ export function ProductsList() {
   /* ---------------- Pagination ---------------- */
 
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-
-  /* ---------------- Add Product ---------------- */
-
-  const handleAddProduct = async (payload: Record<string, unknown>) => {
-    setIsSubmitting(true);
-
-    try {
-      const res = await fetch("/api/product/list-products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error();
-
-      toast.success("Product created successfully");
-
-      setShowAddModal(false);
-      loadProducts();
-    } catch {
-      toast.error("Failed to create product");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const fetchProductById = async (id: string, userId: string) => {
     const res = await fetch(`/api/product?id=${id}&userId=${userId}`);
@@ -233,14 +156,15 @@ export function ProductsList() {
 
       <Modal
         isOpen={showAddModal}
-        onClose={() => !isSubmitting && setShowAddModal(false)}
+        onClose={() => setShowAddModal(false)}
         title="Add Product"
       >
-        {/* <AddProductForm
-          onSubmit={handleAddProduct}
-          onCancel={() => setShowAddModal(false)}
-          isLoading={isSubmitting}
-        /> */}
+        <CreateItemForm
+          loadProducts={() => {
+            loadProducts();
+          }}
+          setShowAddModal={setShowAddModal}
+        />
       </Modal>
 
       <Modal

@@ -1,4 +1,4 @@
-import { Get } from "../http";
+import { Get, Post } from "../http";
 
 export async function getProductList<T = unknown>(
   params?: Record<string, unknown>,
@@ -9,6 +9,9 @@ export async function getProductList<T = unknown>(
 export async function getProduct<T = unknown>(
   params?: Record<string, unknown>,
 ) {
-  console.log("🚀 ~ getProductList ~ params:", params);
   return Get<T>(`/product`, { params });
+}
+
+export async function createProduct<T = unknown>(payload: FormData) {
+  return Post<T>(`/product/create-product`, payload);
 }

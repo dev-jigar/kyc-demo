@@ -11,62 +11,60 @@ export function ProductDetailsView({ product }: Props) {
   if (!product) return null;
 
   return (
-    <div className="space-y-6 text-sm">
-      {/* Header + Status */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Product Event Details
-        </h2>
+    <div className="max-w-6xl mx-auto space-y-10">
+      {/* HEADER */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 p-8 text-white">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-semibold">Product Event Overview</h1>
+            <p className="text-sm text-slate-300 mt-2">
+              Complete metadata and environmental information
+            </p>
+          </div>
 
-        <span
-          className={`px-3 py-1 text-xs rounded-full font-medium ${
-            product.status === "MINTED"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {product.status}
-        </span>
+          <span
+            className={`px-4 py-1.5 text-xs font-semibold rounded-full backdrop-blur-md ${
+              product.status === "MINTED"
+                ? "bg-emerald-400/20 text-emerald-200"
+                : "bg-white/20 text-white"
+            }`}
+          >
+            {product.status}
+          </span>
+        </div>
       </div>
 
-      {/* Basic Info */}
-      <Section title="Basic Information">
-        <DetailItem label="App Name" value={product.appName} />
-        <DetailItem label="Subject Type" value={product.subjectType} />
-        {/* <DetailItem label="IP Address" value={product.ipAddress} /> */}
-      </Section>
+      {/* GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <InfoSection title="General Information">
+          <InfoItem label="App Name" value={product.appName} />
+          <InfoItem label="Subject Type" value={product.subjectType} />
+        </InfoSection>
 
-      {/* Location */}
-      <Section title="Location Details">
-        <DetailItem label="Latitude" value={product.latitude} />
-        <DetailItem label="Longitude" value={product.longitude} />
-        <DetailItem label="Mean Sea Level" value={product.meanSeaLevel} />
-      </Section>
+        <InfoSection title="Location Details">
+          <InfoItem label="Latitude" value={product.latitude} />
+          <InfoItem label="Longitude" value={product.longitude} />
+          <InfoItem label="Mean Sea Level" value={product.meanSeaLevel} />
+        </InfoSection>
 
-      {/* Dates */}
-      <Section title="Date Information">
-        <DetailItem
-          label="Device Date"
-          value={formatDate(product.deviceDate)}
-        />
-        <DetailItem label="Event Date" value={formatDate(product.eventDate)} />
-        <DetailItem label="Created At" value={formatDate(product.createdAt)} />
-      </Section>
+        <InfoSection title="Date Information">
+          <InfoItem label="Event Date" value={formatDate(product.eventDate)} />
+          <InfoItem label="Created At" value={formatDate(product.createdAt)} />
+        </InfoSection>
 
-      {/* Weather */}
-      <Section title="Additional Info">
-        <DetailItem
-          label="Weather"
-          value={product.weather ?? "Not Available"}
-        />
-      </Section>
+        <InfoSection title="Additional Info">
+          <InfoItem
+            label="Weather"
+            value={product.weather ?? "Not Available"}
+          />
+        </InfoSection>
+      </div>
     </div>
   );
 }
 
 /* ---------------- Sub Components (Outside!) ---------------- */
-
-function Section({
+function InfoSection({
   title,
   children,
 }: {
@@ -74,14 +72,17 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-slate-700 mb-3">{title}</h3>
-      <div className="grid grid-cols-2 gap-4">{children}</div>
+    <div className="border rounded-xl p-6 space-y-6">
+      <h3 className="text-sm font-semibold text-slate-700 tracking-wide">
+        {title}
+      </h3>
+
+      <div className="space-y-5">{children}</div>
     </div>
   );
 }
 
-function DetailItem({
+function InfoItem({
   label,
   value,
 }: {
@@ -89,9 +90,12 @@ function DetailItem({
   value: string | number | null | undefined;
 }) {
   return (
-    <div>
-      <div className="text-xs text-slate-400">{label}</div>
-      <div className="font-medium text-slate-800 break-all">{value ?? "-"}</div>
+    <div className="flex justify-between items-start gap-6">
+      <span className="text-sm text-slate-500">{label}</span>
+
+      <span className="text-sm font-medium text-slate-900 break-all text-right max-w-[60%]">
+        {value ?? "-"}
+      </span>
     </div>
   );
 }

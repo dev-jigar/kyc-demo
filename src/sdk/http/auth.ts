@@ -70,7 +70,7 @@ async function withAuth<T>(config: AxiosRequestConfig, tokenOverride?: string) {
       },
     };
 
-    console.log(finalConfig, "finalConfig");
+    // console.log(finalConfig, "finalConfig");
     return api.request<T>(finalConfig);
   } catch (error) {
     console.error("[KYC API] Auth error:", error);
