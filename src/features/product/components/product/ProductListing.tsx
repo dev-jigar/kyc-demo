@@ -97,6 +97,22 @@ export function ProductsList() {
     return json?.data ?? null;
   };
 
+  const handleViewProduct = async (id: string, userId: string) => {
+    try {
+      setIsLoading(true);
+
+      const product = await fetchProductById(id, userId);
+
+      setSelectedProduct(product);
+      setShowViewModal(true);
+    } catch (error) {
+      console.error("View product error:", error);
+      toast.error("Failed to load product details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -128,18 +144,7 @@ export function ProductsList() {
         <ProductCardGrid
           products={products}
           onView={async (id, userId) => {
-            try {
-              setIsLoading(true);
-
-              const product = await fetchProductById(id, userId);
-
-              setSelectedProduct(product);
-              setShowViewModal(true);
-            } catch (error) {
-              toast.error("Failed to load product details");
-            } finally {
-              setIsLoading(false);
-            }
+            handleViewProduct(id, userId);
           }}
         />
       )}
