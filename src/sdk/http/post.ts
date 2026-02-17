@@ -8,23 +8,16 @@ export async function Post<T = unknown>(
   config?: AxiosRequestConfig,
 ) {
   try {
-    // console.log(`[API] POST ${url}`, data, config);
-    // const response = await withAuth<T>({
-    //   ...config,
-    //   method: "POST",
-    //   url,
-    //   data,
-    // });
-    // console.log("🚀 ~ Post ~ response:", response);
-    // console.log(`[API] POST ${url} response:`, response);
-    // return response;
-    const finalConfig: AxiosRequestConfig = {
+    console.log(`[API] POST ${url}`, data, config);
+    const response = await withAuth<T>({
       ...config,
-      headers: {
-        ...(config?.headers || {}),
-      },
-    };
-    return api.request<T>({ ...finalConfig, method: "POST", url, data });
+      method: "POST",
+      url,
+      data,
+    });
+    console.log("🚀 ~ Post ~ response:", response);
+    console.log(`[API] POST ${url} response:`, response);
+    return response;
   } catch (error) {
     console.error(`[API] POST ${url} failed:`, error);
     // return {
