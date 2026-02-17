@@ -19,4 +19,9 @@ export const SIDEBAR_NAV: NavItem[] = [
     label: "PRODUCT",
     children: [{ key: "product", label: "Product" }],
   },
+  {
+    key: "listing",
+    label: "LISTING",
+    children: [{ key: "listing", label: "Listing" }],
+  },
 ];

@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": "bdf9d20c-3261-473d-91a9-c21a0bd593e8",
+      "bankName": "Test National Bank",
+      "accountNumber": "****1234",
+      "accountName": "Seller Account"
+    },
+    {
+      "id": "bdf9d20c-3261-473d-91a9-c21a0bd593e7",
+      "bankName": "Reading Community Bank",
+      "accountNumber": "****5678",
+      "accountName": "Primary Account"
+    }
+  ]
+}

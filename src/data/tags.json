@@ -1,0 +1,184 @@
+{
+     "items": [
+         {
+             "id": "0001b6ae-7bf5-416a-9cc9-1ba0590953ce",
+             "name": "Bike Repair",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "bike-repair",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0023ada6-529d-4f16-b1d7-558d1336b69c",
+             "name": "volleyball",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "volleyball",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0305ed61-77d2-4ff9-8853-92f8fc035703",
+             "name": "Fine Jewelry",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "fine-jewelry",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0452b374-f4a1-43e1-913f-6f29204a22ff",
+             "name": "Half Marathon",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "half-marathon",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "06e14d42-f832-4078-a9a1-dc08b1d1c4b5",
+             "name": "Garden Maintenance",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "garden-maintenance",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "07fe517e-5d85-4382-88be-0a2d97a62754",
+             "name": "Toilet Repair",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "toilet-repair",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "094049a0-1b53-4f2e-a231-14b6573091fc",
+             "name": "Table Tennis Event",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "table-tennis-event",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0a85674c-25cf-45c4-91e1-5aff19e5cecd",
+             "name": "trending",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "trending",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0b54fd64-9708-4177-b2f8-35c01527cb73",
+             "name": "miowwwww",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "miowwwww",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0c86e2cc-6899-4713-b8ee-1e4f2b3abe62",
+             "name": "Curtain Installation",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "curtain-installation",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "0ef6e135-77df-4eee-8b9c-489353e145b0",
+             "name": "UI/UX Design",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "uiux-design",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "125e0f9d-ab5f-403f-a6f4-ac9bca690e97",
+             "name": "Website Development",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "website-development",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "14a8bb50-b18f-4ebe-9c4c-c9cb47489da7",
+             "name": "kids",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "kids",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "1b9a00e3-17f7-4ebf-9e38-6b575f9fe68b",
+             "name": "laptop",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "laptop",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "1ddff445-fc57-4c0b-b91d-93ebc904c6de",
+             "name": "Cloud Services",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "cloud-services",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         },
+         {
+             "id": "1e36d94f-0f21-409b-b7ae-8fe336c05156",
+             "name": "bat",
+             "scopes": [
+                 "all"
+             ],
+             "slug": "bat",
+             "isFeatured": false,
+             "images": null,
+             "tags": []
+         }
+     ],
+     "page": 1,
+     "perPage": 20,
+     "totalCount": 141,
+     "totalPages": 8
+ }

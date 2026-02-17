@@ -1,7 +1,5 @@
 import { getProduct } from "@/src/sdk";
-import { IApiSuccessResponse, IPagedResponse } from "@/src/types";
 import { NextRequest, NextResponse } from "next/server";
-import { Product } from "@/src/types/product";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

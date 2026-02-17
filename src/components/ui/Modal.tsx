@@ -7,35 +7,17 @@ import { createPortal } from "react-dom";
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
 export interface ModalProps {
-  /** Controls modal visibility */
   isOpen: boolean;
-
-  /** Called when modal should close */
   onClose: () => void;
-
-  /** Main modal content */
   children: React.ReactNode;
-
-  /** Header title */
   title?: string;
-
-  /** Header description */
   description?: string;
-
-  /** Modal width */
   size?: ModalSize;
-
-  /** Show close (X) button */
   showCloseButton?: boolean;
-
-  /** Close when clicking backdrop */
   closeOnOverlayClick?: boolean;
-
-  /** Close when pressing escape */
   closeOnEscape?: boolean;
-
-  /** Footer content */
   footer?: React.ReactNode;
+  zIndex?: number;
 }
 
 export function Modal({
@@ -50,6 +32,7 @@ export function Modal({
   closeOnEscape = true,
   footer,
   loading = false,
+  zIndex = 50,
 }: ModalProps & { loading?: boolean }) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -102,8 +85,9 @@ export function Modal({
   /* ---------- modal ---------- */
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleOverlayClick}
+      style={{ zIndex }}
       role="dialog"
       aria-modal="true"
     >

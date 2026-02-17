@@ -1,0 +1,90 @@
+{
+    "success": true,
+    "data": {
+        "id": "91b3732b-853b-40b8-a1b4-5d265fdb5ce8",
+        "sellerId": "71bea9a3-79c5-4fdd-a4be-95ebe872f536",
+        "name": "test product",
+        "productId": "9b530de1-e856-44f1-81c1-77e0f096ffc5",
+        "listingStatus": "LISTING_STARTED",
+        "price": "20.00",
+        "paymentMode": "USD",
+        "completeness": "OnItemDelivered",
+        "privacy": "ALMOST_NOTHING",
+        "description": "this is test product",
+        "bankAccountId": "088f40a1-3220-4cfd-9deb-dae8321d0048",
+        "isLocalPickup": false,
+        "buyerBeingId": 2,
+        "sellingMethod": "fixed",
+        "currentStep": "9",
+        "startAt": null,
+        "endAt": null,
+        "startingPrice": "20.00",
+        "minBidIncrement": "1.00",
+        "reservePrice": "0.00",
+        "minPrice": null,
+        "decrementAmount": null,
+        "taxCode": "10122100A0000",
+        "shipperAccountType": "both",
+        "totalBids": 0,
+        "highestBidsPrice": 0,
+        "auctionDurationDays": 1,
+        "auctionStatus": null,
+        "orgId": null,
+        "isActive": true,
+        "shippingDetail": {
+            "zipCode": null,
+            "weight": 1,
+            "length": 1,
+            "width": 2,
+            "height": 2,
+            "deliveryType": "shipping",
+            "shipFromAddress": {
+                "name": "test",
+                "type": "Home",
+                "address": "test",
+                "addressLine1": "test",
+                "addressLine2": "test",
+                "city": "Mount Penn",
+                "state": "Pennsylvania",
+                "zip": "19606",
+                "country": "United States",
+                "phone": "11111111111"
+            }
+        },
+        "listingMedia": {
+            "images": [
+                "https://bit-core-apis-develop-marketplace-products-images.s3.us-east-1.amazonaws.com/product-listing-images/product-listing-91b3732b-853b-40b8-a1b4-5d265fdb5ce8/aaf48e75-e3e2-4e35-8f15-936898706b08.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAR3FJE5EFTYIEZEXO%2F20260214%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260214T113855Z&X-Amz-Expires=604800&X-Amz-Signature=dbb8b809d2d28fb3d8603fef46653bae750d937219b6abb6e9788119d3c48069&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                "https://bit-core-apis-develop-marketplace-products-images.s3.us-east-1.amazonaws.com/product-listing-images/product-listing-91b3732b-853b-40b8-a1b4-5d265fdb5ce8/0ccd976a-0cab-4807-8452-2280e7b3e5b1-e-t-e.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAR3FJE5EFTYIEZEXO%2F20260214%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260214T113855Z&X-Amz-Expires=604800&X-Amz-Signature=945f24250e4b43ac69b75c1d986030198d1e99e88a1bd65c434c6c220e8ac362&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+            ],
+            "thumbnailURL": "https://bit-core-apis-develop-marketplace-products-images.s3.us-east-1.amazonaws.com/product-listing-images/product-listing-91b3732b-853b-40b8-a1b4-5d265fdb5ce8/aaf48e75-e3e2-4e35-8f15-936898706b08.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAR3FJE5EFTYIEZEXO%2F20260214%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260214T113855Z&X-Amz-Expires=604800&X-Amz-Signature=dbb8b809d2d28fb3d8603fef46653bae750d937219b6abb6e9788119d3c48069&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        },
+        "listingTags": [
+            {
+                "productListingId": "91b3732b-853b-40b8-a1b4-5d265fdb5ce8",
+                "tagId": "0001b6ae-7bf5-416a-9cc9-1ba0590953ce",
+                "tag": {
+                    "id": "0001b6ae-7bf5-416a-9cc9-1ba0590953ce",
+                    "name": "Bike Repair",
+                    "scopes": [
+                        "all"
+                    ],
+                    "slug": "bike-repair",
+                    "isFeatured": false,
+                    "images": null
+                }
+            }
+        ],
+        "linkedStoreFronts": [],
+        "sellerDetails": {
+            "firstName": "MARISA",
+            "lastName": "BERNHEISER",
+            "avatarUrl": "https://bit-core-apis-develop-avatars.s3.us-east-1.amazonaws.com/a08a782b-b2d9-4cc4-a524-d06b829ae757/reference.jpg?x-id=GetObject",
+            "createdAt": "2025-12-08T12:57:20.553Z",
+            "totalRatings": 0,
+            "sumRatings": 0,
+            "averageRating": 0
+        },
+        "isInWatchlist": false,
+        "isInWishlist": false
+    }
+}
