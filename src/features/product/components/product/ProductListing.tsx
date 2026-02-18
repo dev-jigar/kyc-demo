@@ -13,6 +13,7 @@ import { ProductCardGrid } from "./ProductCardGrid";
 import { ProductDetailsView } from "./ProductDetailsView";
 import CreateItemForm from "./AddProduct";
 import { Product, ProductDetails } from "../../types";
+import { Plus } from "lucide-react";
 
 const PAGE_SIZE = 9;
 
@@ -130,7 +131,8 @@ export function ProductsList() {
             />
 
             <Button variant="primary" onClick={() => setShowAddModal(true)}>
-              Add Product
+              <Plus size={16} />
+              Add
             </Button>
           </>
         }

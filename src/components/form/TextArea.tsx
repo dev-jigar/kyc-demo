@@ -28,7 +28,7 @@ export default function TextArea({
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        className="w-full border rounded-lg p-3 min-h-[120px]"
+        className="w-full border border-slate-200 rounded-lg p-3 min-h-[120px] outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
       />
 
       {errorMessage && (

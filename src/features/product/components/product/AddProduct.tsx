@@ -9,6 +9,7 @@ import TextArea from "@/src/components/form/TextArea";
 import { referenceTypeEnum, subjectTypeEnum } from "@/src/schema/itemSchema";
 import PhotoUpload from "@/src/components/form/ImageUpload";
 import { X } from "lucide-react";
+import { Card, SectionTitle } from "@/src/features/kyc";
 
 type PhotoType = {
   file: File;
@@ -246,209 +247,219 @@ export default function CreateItemForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="max-w-4xl mx-auto space-y-10"
+      className="max-w-4xl mx-auto space-y-3"
     >
-      {/* BASIC INFO SECTION */}
-      <div className="bg-white shadow-sm rounded-2xl p-6 space-y-6 border">
-        <h2 className="text-lg font-semibold border-b pb-3">
-          Basic Information
-        </h2>
+      <Card>
+        <SectionTitle> Basic Information</SectionTitle>
+        <div className="p-4 grid grid-cols-2 gap-4">
+          {/* CATEGORY */}
+          <div className="space-y-2">
+            <Controller
+              name="category"
+              control={control}
+              rules={{ required: "Category is required" }}
+              render={({ field }) => (
+                <>
+                  <SelectWithField
+                    label="Category"
+                    options={categoryOptions}
+                    value={
+                      categoryOptions.find(
+                        (opt) => opt.value === field.value,
+                      ) || null
+                    }
+                    onChange={(option: { label: string; value: string }) =>
+                      field.onChange(option?.value ?? "")
+                    }
+                  />
+                  {errors.category && (
+                    <p className="text-red-500 text-sm">
+                      {errors.category.message}
+                    </p>
+                  )}
+                </>
+              )}
+            />
+          </div>
 
-        {/* CATEGORY */}
-        <div className="space-y-2">
-          <Controller
-            name="category"
-            control={control}
-            rules={{ required: "Category is required" }}
-            render={({ field }) => (
-              <>
-                <SelectWithField
-                  label="Category"
-                  options={categoryOptions}
-                  value={
-                    categoryOptions.find((opt) => opt.value === field.value) ||
-                    null
-                  }
-                  onChange={(option: { label: string; value: string }) =>
-                    field.onChange(option?.value ?? "")
-                  }
-                />
-                {errors.category && (
-                  <p className="text-red-500 text-sm">
-                    {errors.category.message}
-                  </p>
-                )}
-              </>
-            )}
-          />
-        </div>
+          {/* NAME */}
+          <div className="space-y-2">
+            <Controller
+              name="name"
+              control={control}
+              rules={{ required: "Name is required" }}
+              render={({ field }) => (
+                <>
+                  <TextInputWithField
+                    label="Name"
+                    placeholder="Enter item name"
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  {errors.name && (
+                    <p className="text-red-500 text-sm">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </>
+              )}
+            />
+          </div>
 
-        {/* NAME */}
-        <div className="space-y-2">
-          <Controller
-            name="name"
-            control={control}
-            rules={{ required: "Name is required" }}
-            render={({ field }) => (
-              <>
-                <TextInputWithField
-                  label="Name"
-                  placeholder="Enter item name"
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm">{errors.name.message}</p>
-                )}
-              </>
-            )}
-          />
+          {/* DESCRIPTION */}
+          <div className="space-y-2">
+            <Controller
+              name="description"
+              control={control}
+              rules={{ required: "Description is required" }}
+              render={({ field }) => (
+                <>
+                  <TextArea
+                    label="Description"
+                    placeholder="Enter description"
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  {errors.description && (
+                    <p className="text-red-500 text-sm">
+                      {errors.description.message}
+                    </p>
+                  )}
+                </>
+              )}
+            />
+          </div>
         </div>
-
-        {/* DESCRIPTION */}
-        <div className="space-y-2">
-          <Controller
-            name="description"
-            control={control}
-            rules={{ required: "Description is required" }}
-            render={({ field }) => (
-              <>
-                <TextArea
-                  label="Description"
-                  placeholder="Enter description"
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-                {errors.description && (
-                  <p className="text-red-500 text-sm">
-                    {errors.description.message}
-                  </p>
-                )}
-              </>
-            )}
-          />
-        </div>
-      </div>
+        {/* </div> */}
+      </Card>
 
       {/* TAG SECTION */}
-      <div className="bg-white shadow-sm rounded-2xl p-6 space-y-6 border">
-        <h2 className="text-lg font-semibold border-b pb-3">Tags</h2>
-
-        <div>
-          <Controller
-            name="tagsInput"
-            control={control}
-            render={({ field }) => (
-              <div className="flex gap-3">
-                <input
-                  value={field.value}
-                  onChange={field.onChange}
-                  className="flex-1 border rounded-lg p-3"
-                  placeholder="Add tag"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addTag();
-                    }
-                  }}
-                />
-                <Button type="button" onClick={addTag}>
-                  Add
-                </Button>
-              </div>
+      <Card>
+        <SectionTitle> Tags</SectionTitle>
+        <div className="p-4 grid grid-cols-1 gap-4">
+          <div>
+            <Controller
+              name="tagsInput"
+              control={control}
+              render={({ field }) => (
+                <div className="flex gap-3">
+                  <input
+                    value={field.value}
+                    onChange={field.onChange}
+                    className="flex-1 border border-slate-200 rounded-lg p-2 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+                    placeholder="Add tag"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                  />
+                  <Button type="button" onClick={addTag}>
+                    Add
+                  </Button>
+                </div>
+              )}
+            />
+            {isSubmitted && tags.length === 0 && (
+              <p className="text-red-500 text-sm mt-1">
+                At least one tag is required
+              </p>
             )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-gray-200 rounded-full text-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="ml-2"
+                    onClick={() => removeTag(index)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* PHOTO SECTION */}
+      <Card>
+        <SectionTitle> Photos</SectionTitle>
+        <div className="p-4 grid grid-cols-1">
+          <PhotoUpload
+            handlePhotoUpload={handlePhotoUpload}
+            photoError={photoError}
           />
-          {isSubmitted && tags.length === 0 && (
-            <p className="text-red-500 text-sm mt-1">
-              At least one tag is required
-            </p>
-          )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {tags.map((tag, index) => (
-              <span
+
+          {/* PHOTO PREVIEW GRID */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5 mt-4">
+            {photos.map((photo, index) => (
+              <div
                 key={index}
-                className="px-3 py-1 bg-gray-200 rounded-full text-sm"
+                className="relative rounded-xl overflow-hidden border border-slate-200 hover:shadow-md transition"
               >
-                {tag}
                 <button
                   type="button"
-                  className="ml-2"
-                  onClick={() => removeTag(index)}
+                  onClick={() => removePhoto(index)}
+                  className="absolute top-2 right-2 z-10 bg-black/60 text-white rounded-full p-1 hover:bg-black"
                 >
-                  ×
+                  <X size={16} />
                 </button>
-              </span>
+
+                <div className="relative w-full h-60">
+                  <Image
+                    src={photo.url}
+                    alt="photo"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>
-      </div>
-
-      {/* PHOTO SECTION */}
-      <div className="bg-white shadow-sm rounded-2xl p-6 space-y-6 border">
-        <h2 className="text-lg font-semibold border-b pb-3">Photos</h2>
-
-        <PhotoUpload
-          handlePhotoUpload={handlePhotoUpload}
-          photoError={photoError}
-        />
-
-        {/* PHOTO PREVIEW GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-5 mt-4">
-          {photos.map((photo, index) => (
-            <div
-              key={index}
-              className="relative rounded-xl overflow-hidden border hover:shadow-md transition"
-            >
-              <button
-                type="button"
-                onClick={() => removePhoto(index)}
-                className="absolute top-2 right-2 z-10 bg-black/60 text-white rounded-full p-1 hover:bg-black"
-              >
-                <X size={16} />
-              </button>
-
-              <div className="relative w-full h-60">
-                <Image
-                  src={photo.url}
-                  alt="photo"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      </Card>
 
       {/* PRIVACY SECTION */}
-      <div className="bg-white shadow-sm rounded-2xl p-6 space-y-6 border">
-        <h2 className="text-lg font-semibold border-b pb-3">
-          Privacy Settings
-        </h2>
+      <Card>
+        <SectionTitle> Privacy Settings</SectionTitle>
+        <div className="p-4 grid grid-cols-2 gap-4">
+          <Controller
+            name="privacy"
+            control={control}
+            rules={{ required: "Privacy is required" }}
+            render={({ field }) => (
+              <>
+                <RadioGroup
+                  label="Privacy"
+                  options={privacyOptions}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+                {errors.privacy && (
+                  <p className="text-red-500 text-sm">
+                    {errors.privacy.message}
+                  </p>
+                )}
+              </>
+            )}
+          />
+        </div>
+      </Card>
 
-        <Controller
-          name="privacy"
-          control={control}
-          rules={{ required: "Privacy is required" }}
-          render={({ field }) => (
-            <>
-              <RadioGroup
-                label="Privacy"
-                options={privacyOptions}
-                value={field.value}
-                onChange={field.onChange}
-              />
-              {errors.privacy && (
-                <p className="text-red-500 text-sm">{errors.privacy.message}</p>
-              )}
-            </>
-          )}
-        />
+      {/* ACTIONS */}
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={() => setShowAddModal(false)}>
+          Cancel
+        </Button>
+
+        <Button type="submit">Save</Button>
       </div>
-
-      <Button type="submit" fullWidth>
-        Create Item
-      </Button>
     </form>
   );
 }

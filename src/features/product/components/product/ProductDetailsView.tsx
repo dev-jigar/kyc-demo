@@ -1,18 +1,29 @@
 "use client";
 
 import { formatDate } from "@/src/utils";
+import { MapPin, Calendar, Cloud, AppWindow } from "lucide-react";
 import { ProductDetails } from "../../types";
 
 type Props = {
-  product: ProductDetails;
+  product: ProductDetails | null;
 };
 
 export function ProductDetailsView({ product }: Props) {
   if (!product) return null;
 
+  const toTitleCase = (str) => {
+    if (!str) return "";
+
+    return str
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-10">
-      {/* HEADER */}
+    <div className="space-y-6">
+      {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 p-8 text-white">
         <div className="flex justify-between items-start">
           <div>
@@ -34,50 +45,65 @@ export function ProductDetailsView({ product }: Props) {
         </div>
       </div>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <InfoSection title="General Information">
+      {/* Info Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <InfoSection
+          icon={<AppWindow className="h-4 w-4" />}
+          title="General Information"
+        >
           <InfoItem label="App Name" value={product.appName} />
-          <InfoItem label="Subject Type" value={product.subjectType} />
+          <InfoItem
+            label="Subject Type"
+            value={toTitleCase(product.subjectType)}
+          />
         </InfoSection>
 
-        <InfoSection title="Location Details">
+        <InfoSection
+          icon={<MapPin className="h-4 w-4" />}
+          title="Location Details"
+        >
           <InfoItem label="Latitude" value={product.latitude} />
           <InfoItem label="Longitude" value={product.longitude} />
           <InfoItem label="Mean Sea Level" value={product.meanSeaLevel} />
         </InfoSection>
 
-        <InfoSection title="Date Information">
+        <InfoSection
+          icon={<Calendar className="h-4 w-4" />}
+          title="Date Information"
+        >
           <InfoItem label="Event Date" value={formatDate(product.eventDate)} />
           <InfoItem label="Created At" value={formatDate(product.createdAt)} />
         </InfoSection>
 
-        <InfoSection title="Additional Info">
-          <InfoItem
-            label="Weather"
-            value={product.weather ?? "Not Available"}
-          />
+        <InfoSection
+          icon={<Cloud className="h-4 w-4" />}
+          title="Additional Info"
+        >
+          <InfoItem label="Weather" value={product.weather ?? "-"} />
         </InfoSection>
       </div>
     </div>
   );
 }
 
-/* ---------------- Sub Components (Outside!) ---------------- */
 function InfoSection({
   title,
+  icon,
   children,
 }: {
   title: string;
+  icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="border rounded-xl p-6 space-y-6">
-      <h3 className="text-sm font-semibold text-slate-700 tracking-wide">
+    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-200 space-y-5">
+      <div className="flex items-center gap-3 font-bold">
+        <span className="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg text-blue-600">
+          {icon}
+        </span>
         {title}
-      </h3>
-
-      <div className="space-y-5">{children}</div>
+      </div>
+      <div className="space-y-3">{children}</div>
     </div>
   );
 }
@@ -90,12 +116,9 @@ function InfoItem({
   value: string | number | null | undefined;
 }) {
   return (
-    <div className="flex justify-between items-start gap-6">
-      <span className="text-sm text-slate-500">{label}</span>
-
-      <span className="text-sm font-medium text-slate-900 break-all text-right max-w-[60%]">
-        {value ?? "-"}
-      </span>
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="font-medium text-gray-900 text-sm">{label}</span>
+      <span className="text-sm text-gray-500">{value ?? "-"}</span>
     </div>
   );
 }

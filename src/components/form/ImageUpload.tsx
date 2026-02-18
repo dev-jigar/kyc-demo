@@ -1,34 +1,25 @@
-import React, { useRef, useState } from "react";
-import { Button } from "../ui";
+"use client";
+
+import { Upload } from "lucide-react";
 
 const PhotoUpload = ({ handlePhotoUpload, photoError }) => {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
-
   return (
     <div>
       <label className="block mb-2 font-medium">Upload Photos</label>
 
-      {/* Hidden File Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={(e) => handlePhotoUpload(e.target.files)}
-      />
-
-      {/* Custom Button */}
-      <Button
-        type="button"
-        onClick={handleClick}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-      >
-        Choose Photos
-      </Button>
+      <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-slate-200 p-6 transition-colors hover:border-primary hover:bg-secondary/50 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100">
+        <Upload className="h-6 w-6 text-muted-foreground" />
+        <span className="text-sm font-medium text-muted-foreground">
+          Click to upload photos
+        </span>
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handlePhotoUpload(e.target.files)}
+        />
+      </label>
 
       {photoError && <p className="text-red-500 text-sm mt-1">{photoError}</p>}
     </div>
