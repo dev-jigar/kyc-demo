@@ -143,13 +143,15 @@ export function ProductListing() {
     <div className="max-w-7xl mx-auto mt-6">
       <div className="section-card">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-emerald-50/60 via-background to-background">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center ring-2 ring-primary/10">
               <Package className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-black">Product Listings</h2>
+              <h2 className="text-xl font-bold text-foreground">
+                Product Listings
+              </h2>
               <p className="text-sm text-muted-foreground">
                 {totalItems} items
               </p>

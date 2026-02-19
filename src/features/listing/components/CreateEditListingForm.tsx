@@ -522,9 +522,9 @@ export function CreateEditListingForm({
 
   return (
     <>
-      <div className="h-screen bg-slate-100 p-6">
-        <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex-shrink-0 border-b border-slate-200 bg-white px-8 py-5">
+      <div className="h-screen bg-gradient-to-br from-emerald-50 via-background to-slate-100 p-6">
+        <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-md)]">
+          <div className="flex-shrink-0 border-b border-border/70 bg-card/80 backdrop-blur px-8 py-5">
             <Stepper
               steps={steps}
               active={step}
@@ -532,7 +532,7 @@ export function CreateEditListingForm({
             />
 
             <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/15">
                 <StepIcon className="h-6 w-6 text-primary" />
               </div>
 
@@ -541,7 +541,9 @@ export function CreateEditListingForm({
                   Step {step + 1} of {steps.length}
                 </div>
 
-                <h2 className="text-2xl font-bold text-black">{steps[step]}</h2>
+                <h2 className="text-2xl font-bold text-foreground">
+                  {steps[step]}
+                </h2>
               </div>
             </div>
           </div>
