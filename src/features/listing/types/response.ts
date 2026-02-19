@@ -1,27 +1,4 @@
-export interface Address {
-  id?: string;
-  name?: string;
-  type?: string;
-  address?: string;
-  addressLine1?: string;
-  addressLine2?: string | null;
-  city?: string;
-  state?: string;
-  stateCode?: string | null;
-  zip?: string;
-  country?: string;
-  countryCode?: string | null;
-  phone?: string | null;
-  isDefault?: boolean;
-  isAddressMatched?: boolean;
-  latitude?: number;
-  longitude?: number;
-  firstName?: string;
-  lastName?: string;
-  email?: string | null;
-  customAddressType?: string | null;
-  isDmvVerified?: boolean;
-}
+
 
 export interface ShippingDetail {
   listingId?: string;
@@ -119,3 +96,45 @@ export interface ProductListingListResponse {
   totalPages: number;
   totalCount: number;
 }
+
+export interface ListingForm {
+  name: string;
+  description: string;
+  tags: { id: string; name: string }[];
+  thumbnail: string | null;
+  image: string[];
+  sellingMethod: SellingMethod;
+  price: number;
+  paymentMode: PaymentMode;
+  bankAccount: string;
+  deliveryType: DeliveryType;
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+  shippingCompany: string;
+  privacy: Privacy;
+  buyerLevel: number;
+  taxCode: string;
+  selectedAddressId: string;
+  listingStatus: string;
+}
+
+export type Address = {
+  id: string;
+  type: "HOME" | "WORK";
+  name: string;
+  address: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  stateCode?: string;
+  zip: string;
+  country: string;
+  countryCode?: string;
+  phone?: string;
+  isDefault: boolean;
+  latitude?: number;
+  longitude?: number;
+};

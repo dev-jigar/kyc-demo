@@ -1,119 +1,38 @@
 "use client";
 
 import React, { useState } from "react";
-import Stepper from "../../../components/Stepper/Stepper";
 import { Modal } from "@/src/components/ui";
+import { Select } from "@/src/components";
+import { Option } from "@/src/types/components";
 import bankAccountsJson from "../../../data/bank-accounts.json";
-import { ProductListingItem, ListingTag } from "../types/response";
+import {
+  ProductListingItem,
+  ListingTag,
+  ListingForm,
+  Address,
+  PaymentMode,
+  DeliveryType,
+  Privacy,
+} from "../types/response";
 import { sellerId } from "@/src/app/api/product-listing/route";
 import ListingPreview from "./ListingPreview";
-
-export type SellingMethod = "fixed" | "auction";
-export type PaymentMode = "USD" | "CRYPTO";
-export type DeliveryType = "shipping" | "pickup";
-export type Privacy = "ALMOST_NOTHING" | "SOME" | "EVERYTHING";
-
-interface ListingForm {
-  name: string;
-  description: string;
-  tags: { id: string; name: string }[];
-  thumbnail: string | null;
-  image: string[];
-
-  sellingMethod: SellingMethod;
-  price: number;
-
-  paymentMode: PaymentMode;
-  bankAccount: string;
-
-  deliveryType: DeliveryType;
-  weight: number;
-  length: number;
-  width: number;
-  height: number;
-  shippingCompany: string;
-
-  privacy: Privacy;
-  buyerLevel: number;
-  taxCode: string;
-  selectedAddressId: string;
-  listingStatus: string;
-}
-
-type Address = {
-  id: string;
-  type: "HOME" | "WORK"; // or match enum
-  name: string;
-  address: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;
-  stateCode?: string;
-  zip: string;
-  country: string;
-  countryCode?: string;
-  phone?: string;
-  isDefault: boolean;
-  latitude?: number;
-  longitude?: number;
-};
-
-type TaxData = {
-  id?: string;
-  taxCode?: string;
-  code?: string;
-  name?: string;
-};
-
-const apiAddresses: Address[] = [
-  {
-    id: "4030ddff-b4cb-4cb2-aad0-86989cee68ee",
-    type: "HOME",
-    name: "Home",
-    address: "69 W 33RD ST, READING, PA 19606",
-    addressLine1: "69 W 33RD ST",
-    city: "READING",
-    state: "Pennsylvania",
-    zip: "19606",
-    country: "United States",
-    isDefault: true,
-  },
-];
-
-type CreateEditListingFormProps = {
-  mode: "create" | "edit";
-  listingId?: string | null;
-  onCancel?: () => void;
-  onSuccess?: () => void;
-  staticData?: ProductListingItem | null;
-};
-
-const defaultData: ListingForm = {
-  name: "Test Product",
-  description: "This is test product",
-  tags: [{ id: "", name: "Bike Repair" }],
-  thumbnail: "https://picsum.photos/200/200?random=1",
-  image: [
-    "https://picsum.photos/200/200?random=2",
-    "https://picsum.photos/200/200?random=3",
-  ],
-  sellingMethod: "fixed",
-  price: 20,
-  paymentMode: "USD",
-  bankAccount: "Test National Bank",
-  deliveryType: "shipping",
-  weight: 1,
-  length: 1,
-  width: 2,
-  height: 2,
-  shippingCompany: "FedEx",
-  privacy: "ALMOST_NOTHING",
-  buyerLevel: 2,
-  taxCode: "OTC Pet Food (10122100A0000)",
-  selectedAddressId: apiAddresses[0].id,
-  listingStatus: "LISTING_STARTED",
-};
+import {
+  Upload,
+  X,
+  MapPin,
+  ChevronRight,
+  ChevronLeft,
+  Package,
+} from "lucide-react";
+import Stepper from "./Stepper";
+import {
+  BankAccount,
+  CreateEditListingFormProps,
+  TagData,
+  TaxData,
+} from "../types/listingTypes";
+import { defaultData } from "../types/defaultData";
+import { buyerLevels, stepIcons, steps } from "../constant";
 
 export function CreateEditListingForm({
   mode,
@@ -122,18 +41,13 @@ export function CreateEditListingForm({
   onSuccess,
   staticData,
 }: CreateEditListingFormProps) {
-  const [addresses, setAddresses] = useState<Address[]>(apiAddresses);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [listed, setListed] = useState(false);
-  type BankAccount = {
-    id: string;
-    bankName: string;
-    accountNumber: string;
-    accountName?: string;
-  };
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [form, setForm] = useState<ListingForm>(defaultData);
   const [loadingData, setLoadingData] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [addressSearch, setAddressSearch] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [step, setStep] = useState<number>(0);
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false);
@@ -141,10 +55,10 @@ export function CreateEditListingForm({
   const [taxOptions, setTaxOptions] = useState<
     { code: string; name: string }[]
   >([]);
-
   const [selectedAddressLocal, setSelectedAddressLocal] = useState<
     string | null
   >(null);
+  const [tagSelectOption, setTagSelectOption] = useState<Option | null>(null);
 
   const userId = sellerId ?? "10cea43f-d816-4895-8670-86f2460e49a3";
 
@@ -169,6 +83,12 @@ export function CreateEditListingForm({
     ),
   });
 
+  const filteredAddresses = addresses.filter((a) =>
+    `${a.name} ${a.address} ${a.city} ${a.state}`
+      .toLowerCase()
+      .includes(addressSearch.toLowerCase()),
+  );
+
   React.useEffect(() => {
     if (mode === "create" && staticData) {
       const prefilled = mapStaticToFormCreate(staticData);
@@ -191,7 +111,6 @@ export function CreateEditListingForm({
 
       switch (currentStep) {
         case 0:
-          console.log(mode, staticData);
           if (mode === "create" && staticData) {
             await fetch("/api/product-listing/create", {
               method: "POST",
@@ -209,7 +128,6 @@ export function CreateEditListingForm({
             });
             break;
           } else {
-            console.log(form.tags);
             formData.append("id", listingId ?? "");
             formData.append("sellerId", userId);
             formData.append("name", form.name);
@@ -219,6 +137,17 @@ export function CreateEditListingForm({
               "listingTags",
               JSON.stringify(form.tags.map((t) => t.id)),
             );
+            formData.append(
+              "listingMedia",
+              JSON.stringify({
+                thumbnailURL: imageFiles[0]?.name ?? null,
+                images: imageFiles.slice(1).map((f) => f.name),
+              }),
+            );
+
+            imageFiles.forEach((file) => {
+              formData.append("image", file);
+            });
 
             await fetch("/api/product-listing/update", {
               method: "POST",
@@ -230,67 +159,20 @@ export function CreateEditListingForm({
         case 1:
           formData.append("id", listingId ?? "");
           formData.append("sellerId", userId);
+          formData.append("sellingMethod", form.sellingMethod);
+          formData.append("price", String(form.price));
+          formData.append("privacy", form.privacy);
+          formData.append("bankAccountId", form.bankAccount);
+          formData.append("taxCode", form.taxCode);
           formData.append("currentStep", "2");
-
-          // ✅ metadata JSON
-          formData.append(
-            "listingMedia",
-            JSON.stringify({
-              thumbnailURL: imageFiles[0]?.name ?? null,
-              images: imageFiles.slice(1).map((f) => f.name),
-            }),
-          );
-
-          imageFiles.forEach((file) => {
-            formData.append("image", file);
-          });
-
-          console.log(formData);
 
           await fetch("/api/product-listing/update", {
             method: "POST",
             body: formData,
           });
-
           break;
 
         case 2:
-          formData.append("id", listingId ?? "");
-          formData.append("sellerId", userId);
-          formData.append("sellingMethod", form.sellingMethod);
-          formData.append("price", String(form.price));
-          formData.append("currentStep", "3");
-
-          await fetch("/api/product-listing/update", {
-            method: "POST",
-            body: formData,
-          });
-          break;
-
-        case 3:
-          formData.append("id", listingId ?? "");
-          formData.append("sellerId", userId);
-          formData.append("bankAccountId", form.bankAccount);
-          formData.append("currentStep", "4");
-
-          await fetch("/api/product-listing/update", {
-            method: "POST",
-            body: formData,
-          });
-          break;
-
-        case 4:
-          formData.append("id", listingId ?? "");
-          formData.append("sellerId", userId);
-          formData.append("currentStep", "5");
-
-          await fetch("/api/product-listing/update", {
-            method: "POST",
-            body: formData,
-          });
-          break;
-
-        case 5:
           formData.append(
             "isLocalPickup",
             String(form.deliveryType === "pickup"),
@@ -308,7 +190,7 @@ export function CreateEditListingForm({
               shipFromAddress: selectedAddress,
             }),
           );
-          formData.append("currentStep", "6");
+          formData.append("currentStep", "3");
 
           await fetch("/api/product-listing/update", {
             method: "POST",
@@ -316,23 +198,11 @@ export function CreateEditListingForm({
           });
           break;
 
-        case 6:
-          formData.append("sellerId", userId);
-          formData.append("id", listingId ?? "");
-          formData.append("privacy", form.privacy);
-          formData.append("currentStep", "7");
-
-          await fetch("/api/product-listing/update", {
-            method: "POST",
-            body: formData,
-          });
-          break;
-
-        case 7:
+        case 3:
           formData.append("sellerId", userId);
           formData.append("id", listingId ?? "");
           formData.append("buyerBeingId", String(form.buyerLevel));
-          formData.append("currentStep", "8");
+          formData.append("currentStep", "4");
 
           await fetch("/api/product-listing/update", {
             method: "POST",
@@ -340,18 +210,7 @@ export function CreateEditListingForm({
           });
           break;
 
-        case 8:
-          formData.append("sellerId", userId);
-          formData.append("id", listingId ?? "");
-          formData.append("taxCode", form.taxCode);
-          formData.append("currentStep", "9");
-
-          await fetch("/api/product-listing/update", {
-            method: "POST",
-            body: formData,
-          });
-          break;
-        case 9:
+        case 4:
           await handleSubmit();
           break;
 
@@ -404,11 +263,8 @@ export function CreateEditListingForm({
   const fetchTags = async () => {
     try {
       const res = await fetch(`/api/tags`);
-
       if (!res.ok) throw new Error("Failed to fetch tags");
-
       const json = await res.json();
-
       setTagOptions(json?.data?.items ?? []);
     } catch (err) {
       console.error("Tag fetch failed", err);
@@ -450,8 +306,7 @@ export function CreateEditListingForm({
     privacy: data?.privacy ?? "ALMOST_NOTHING",
     buyerLevel: data?.buyerBeingId ?? 1,
     taxCode: data?.taxCode ?? "",
-    selectedAddressId:
-      data?.shippingDetail?.shipFromAddress?.id ?? apiAddresses[0].id,
+    selectedAddressId: data?.shippingDetail?.shipFromAddress?.id ?? null,
     listingStatus: data.listingStatus,
   });
 
@@ -484,6 +339,32 @@ export function CreateEditListingForm({
       image: form.image,
     };
   };
+
+  const paymentModeOptions: Option[] = [
+    { value: "USD", label: "US Dollar" },
+    { value: "CRYPTO", label: "Cryptocurrency" },
+  ];
+
+  const bankAccountOptions: Option[] = bankAccounts.map((b) => ({
+    value: b.id,
+    label: `${b.bankName} • ${b.accountNumber}`,
+  }));
+
+  const deliveryTypeOptions: Option[] = [
+    { value: "shipping", label: "Shipping" },
+    { value: "pickup", label: "Local Pickup" },
+  ];
+
+  const privacyOptions: Option[] = [
+    { value: "ALMOST_NOTHING", label: "Almost Nothing" },
+    { value: "SOME", label: "Some Info" },
+    { value: "EVERYTHING", label: "Everything" },
+  ];
+
+  const taxSelectOptions: Option[] = taxOptions.map((t) => ({
+    value: t.code,
+    label: `${t.name} (${t.code})`,
+  }));
 
   const fetchListing = async () => {
     if (mode !== "edit" || !listingId) return;
@@ -579,7 +460,6 @@ export function CreateEditListingForm({
       });
       if (!res.ok) throw new Error("Update failed");
       const json = await res.json();
-      console.log("UPDATED LISTING →", json);
       onSuccess?.();
     } catch (err) {
       console.error("Update failed", err);
@@ -598,21 +478,6 @@ export function CreateEditListingForm({
       </div>
     );
   }
-  const steps = [
-    "Items Details",
-    "Media",
-    "Selling Method",
-    "Payment",
-    "Transaction",
-    "Delivery",
-    "Privacy",
-    "Buyer",
-    "Taxes",
-    "Preview",
-  ];
-
-  type TagData = { id: string; name: string };
-  type TaxData = { taxCode?: string; code?: string; name?: string };
 
   const addTag = (id: string) => {
     const found = tagOptions.find((t) => t.id === id);
@@ -648,518 +513,545 @@ export function CreateEditListingForm({
     (opt) => !form.tags.some((t) => t.id === opt.id),
   );
 
+  const availableTagSelectOptions: Option[] = availableTagOptions.map((t) => ({
+    value: t.id,
+    label: t.name,
+  }));
+
+  const StepIcon = stepIcons[step] || Package;
+
   return (
     <>
-      <div className="pr-2 bg-white text-black">
-        <div className="sticky top-0 z-30 bg-white border-b">
-          <div className="p-4 max-w-full">
-            <div className="flex flex-col gap-3">
-              <Stepper
-                steps={steps}
-                active={step}
-                onStepClick={(i) => setStep(i)}
-              />
-              <div className="flex items-center justify-between">
+      <div className="h-screen bg-slate-100 p-6">
+        <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex-shrink-0 border-b border-slate-200 bg-white px-8 py-5">
+            <Stepper
+              steps={steps}
+              active={step}
+              onStepClick={(i) => setStep(i)}
+            />
+
+            <div className="mt-6 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
+                <StepIcon className="h-6 w-6 text-primary" />
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Step {step + 1} of {steps.length}
+                </div>
+
+                <h2 className="text-2xl font-bold text-black">{steps[step]}</h2>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-8 py-8">
+            <div className="mx-auto w-full max-w-4xl rounded-2xl border border-border bg-card p-8 shadow-sm">
+              <div className="animate-fade-in space-y-6 text-black" key={step}>
+                {step === 0 && (
+                  <section className="space-y-5">
+                    <div>
+                      <label className="form-label text-black">Item Name</label>
+                      <input
+                        value={form.name}
+                        onChange={(e) => update("name", e.target.value)}
+                        className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-black
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;"
+                        placeholder="Enter item name..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Description</label>
+                      <textarea
+                        value={form.description}
+                        onChange={(e) => update("description", e.target.value)}
+                        className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; min-h-[25] resize-none"
+                        placeholder="Describe your item..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Tags</label>
+                      <div className="mt-2 flex gap-2 flex-wrap mb-4">
+                        {form.tags.map((t) => (
+                          <span key={t.id || t.name} className="tag-pill">
+                            {t.name}
+                            <button
+                              onClick={() => removeTagById(t.id)}
+                              className="tag-pill-remove"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <Select
+                        disabled={listed}
+                        value={tagSelectOption}
+                        placeholder="Add a tag..."
+                        options={availableTagSelectOptions}
+                        onChange={(option) => {
+                          const selected = option as Option | null;
+                          if (selected?.value) {
+                            addTag(selected.value);
+                            setTagSelectOption(null);
+                          }
+                        }}
+                      />
+                    </div>
+                    <label className="form-label">Upload Product Images</label>
+                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-border rounded-2xl bg-secondary/30 hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200 cursor-pointer group">
+                      <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
+                      <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                        Click to upload images
+                      </span>
+                      <input
+                        disabled={listed}
+                        type="file"
+                        multiple
+                        onChange={(e) => handleUpload(e.target.files)}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {form.thumbnail && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                          Thumbnail
+                        </p>
+                        <div className="relative w-28 h-28 group">
+                          <img
+                            src={form.thumbnail}
+                            className="rounded-xl w-full h-full object-cover ring-2 ring-primary/20"
+                          />
+                          <button
+                            disabled={listed}
+                            onClick={removeThumbnail}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {form.image.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                          Gallery
+                        </p>
+                        <div className="flex gap-3 flex-wrap">
+                          {form.image.map((img, i) => (
+                            <div key={i} className="relative w-20 h-20 group">
+                              <img
+                                src={img}
+                                className="rounded-xl w-full h-full object-cover border-2 border-border"
+                              />
+                              <button
+                                disabled={listed}
+                                onClick={() => removeImage(i)}
+                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {step === 1 && (
+                  <section className="space-y-5">
+                    <label className="form-label">Selling Method</label>
+                    <div className="flex gap-4">
+                      {(["fixed"] as const).map((method) => (
+                        <button
+                          key={method}
+                          onClick={() => update("sellingMethod", method)}
+                          className={`flex-1 option-card text-left ${
+                            form.sellingMethod === method
+                              ? "option-card-active"
+                              : "option-card-inactive"
+                          }`}
+                        >
+                          <div className="font-semibold text-foreground capitalize">
+                            Fixed Price
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {method === "fixed"
+                              ? "Set a specific price"
+                              : "Let buyers bid"}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div>
+                      <label className="form-label">Selling Price</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
+                          $
+                        </span>
+                        <input
+                          disabled={listed}
+                          type="number"
+                          value={form.price}
+                          onChange={(e) =>
+                            update("price", Number(e.target.value))
+                          }
+                          className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; pl-8"
+                        />
+                      </div>
+                    </div>
+
+                    <label className="form-label">Privacy Level</label>
+                    <Select
+                      disabled={listed}
+                      value={
+                        privacyOptions.find(
+                          (opt) => opt.value === form.privacy,
+                        ) ?? null
+                      }
+                      placeholder="Select privacy level"
+                      options={privacyOptions}
+                      onChange={(option) => {
+                        const selected = option as Option | null;
+                        if (selected) {
+                          update("privacy", selected.value as Privacy);
+                        }
+                      }}
+                    />
+
+                    <div>
+                      <label className="form-label">Payment Method</label>
+                      <Select
+                        disabled={listed}
+                        value={
+                          paymentModeOptions.find(
+                            (opt) => opt.value === form.paymentMode,
+                          ) ?? null
+                        }
+                        placeholder="Select payment method"
+                        options={paymentModeOptions}
+                        onChange={(option) => {
+                          const selected = option as Option | null;
+                          if (selected) {
+                            update(
+                              "paymentMode",
+                              selected.value as PaymentMode,
+                            );
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Bank Account</label>
+                      <Select
+                        disabled={listed}
+                        value={
+                          bankAccountOptions.find(
+                            (opt) => opt.value === form.bankAccount,
+                          ) ?? null
+                        }
+                        placeholder="Select account..."
+                        options={bankAccountOptions}
+                        onChange={(option) => {
+                          const selected = option as Option | null;
+                          update("bankAccount", selected?.value ?? "");
+                        }}
+                      />
+                    </div>
+
+                    <label className="form-label">Tax Code</label>
+                    <Select
+                      disabled={listed}
+                      value={
+                        taxSelectOptions.find(
+                          (opt) => opt.value === form.taxCode,
+                        ) ?? null
+                      }
+                      placeholder="Select tax"
+                      options={taxSelectOptions}
+                      onChange={(option) => {
+                        const selected = option as Option | null;
+                        update("taxCode", selected?.value ?? "");
+                      }}
+                    />
+                  </section>
+                )}
+
+                {step === 2 && (
+                  <section className="space-y-5">
+                    <div>
+                      <label className="form-label">Delivery Type</label>
+                      <Select
+                        disabled={listed}
+                        value={
+                          deliveryTypeOptions.find(
+                            (opt) => opt.value === form.deliveryType,
+                          ) ?? null
+                        }
+                        placeholder="Select delivery type"
+                        options={deliveryTypeOptions}
+                        onChange={(option) => {
+                          const selected = option as Option | null;
+                          if (selected) {
+                            update(
+                              "deliveryType",
+                              selected.value as DeliveryType,
+                            );
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className="section-card p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center shrink-0 mt-0.5">
+                          <MapPin className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground">
+                            {
+                              addresses.find(
+                                (a) => a.id === form.selectedAddressId,
+                              )?.name
+                            }
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {
+                              addresses.find(
+                                (a) => a.id === form.selectedAddressId,
+                              )?.address
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      disabled={listed}
+                      onClick={() => {
+                        setSelectedAddressLocal(form.selectedAddressId);
+                        setShowAddressModal(true);
+                      }}
+                      className="btn-primary"
+                    >
+                      Change Address
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { key: "weight" as const, label: "Weight (lbs)" },
+                        { key: "length" as const, label: "Length (in)" },
+                        { key: "width" as const, label: "Width (in)" },
+                        { key: "height" as const, label: "Height (in)" },
+                      ].map(({ key, label }) => (
+                        <div key={key}>
+                          <label className="form-label">{label}</label>
+                          <input
+                            disabled={listed}
+                            type="number"
+                            value={form[key]}
+                            onChange={(e) =>
+                              update(key, Number(e.target.value))
+                            }
+                            className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;"
+                            placeholder={label}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      <label className="form-label">Shipping Company</label>
+                      <input
+                        disabled={listed}
+                        value={form.shippingCompany}
+                        onChange={(e) =>
+                          update("shippingCompany", e.target.value)
+                        }
+                        className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;"
+                      />
+                    </div>
+                  </section>
+                )}
+
+                {step === 3 && (
+                  <section className="space-y-4">
+                    <label className="form-label">
+                      Buyer Verification Level
+                    </label>
+
+                    <p className="text-sm text-muted-foreground">
+                      What is the Being ID level you want the buyer to be?
+                    </p>
+
+                    <div className="space-y-3">
+                      {buyerLevels.map((lvl) => (
+                        <div
+                          key={lvl.level}
+                          onClick={() => {
+                            if (listed) return;
+                            update("buyerLevel", lvl.level);
+                          }}
+                          className={`option-card cursor-pointer ${
+                            form.buyerLevel === lvl.level
+                              ? "option-card-active"
+                              : "option-card-inactive"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Circle */}
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mt-1 ${
+                                form.buyerLevel === lvl.level
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {lvl.level}
+                            </div>
+
+                            {/* Text */}
+                            <div className="flex-1">
+                              <div className="font-semibold text-foreground">
+                                Level {lvl.level} · {lvl.title}
+                                {lvl.recommended && (
+                                  <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                    Recommended
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {lvl.description}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {step === 4 && (
+                  <ListingPreview form={form} addresses={addresses} />
+                )}
+              </div>
+
+              <div className="mt-10 flex items-center justify-between border-t border-border pt-6">
                 <div>
-                  <div className="text-xs font-semibold text-green-500">
-                    Step {step + 1} of {steps.length}
-                  </div>
-                  <h2 className="text-2xl font-semibold text-black mt-1">
-                    {steps[step]}
-                  </h2>
+                  {onCancel && (
+                    <button onClick={onCancel} className="btn-ghost">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={onPrev}
+                    disabled={step === 0}
+                    className="btn-secondary flex items-center gap-1.5 text-black"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </button>
+
+                  <button
+                    onClick={onNext}
+                    className="btn-primary flex items-center gap-1.5"
+                  >
+                    {step === steps.length - 1
+                      ? submitting
+                        ? "Saving..."
+                        : "Save Listing"
+                      : "Next"}
+                    {step < steps.length - 1 && (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="p-6 bg-white border rounded-b-lg">
-          <div className="space-y-6">
-            {step === 0 && (
-              <section className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-black">
-                    Item Name
-                  </label>
-                  <input
-                    value={form.name}
-                    onChange={(e) => update("name", e.target.value)}
-                    className="w-full border bg-white text-black rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-black">
-                    Description
-                  </label>
-                  <textarea
-                    value={form.description}
-                    onChange={(e) => update("description", e.target.value)}
-                    className="w-full border bg-white text-black rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-black">Tags</label>
-                  <div className="mt-2 flex gap-2 flex-wrap">
-                    {form.tags.map((t) => (
-                      <span
-                        key={t.id || t.name}
-                        className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm"
-                      >
-                        {t.name}
-                        <button
-                          onClick={() => removeTagById(t.id)}
-                          className="text-xs"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-
-                  <select
-                    disabled={listed}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        addTag(e.target.value);
-                        e.target.value = "";
-                      }
-                    }}
-                    className="mt-3 w-full border rounded-md px-3 py-2 text-sm"
-                    defaultValue=""
-                  >
-                    <option value="">Add a tag...</option>
-                    {availableTagOptions.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </section>
-            )}
-
-            {step === 1 && (
-              <section className="space-y-4">
-                <label className="text-sm font-medium text-black">
-                  Upload Product Images
-                </label>
-                <input
-                  disabled={listed}
-                  type="file"
-                  multiple
-                  onChange={(e) => handleUpload(e.target.files)}
-                  className="block w-full text-sm border rounded-md p-4 bg-white text-black"
-                />
-
-                {form.thumbnail && (
-                  <div>
-                    <p className="text-xs text-black mb-1">Thumbnail</p>
-                    <div className="relative w-24 h-24">
-                      <img
-                        src={form.thumbnail}
-                        className="rounded-md w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={removeThumbnail}
-                        className="absolute top-1 right-1 bg-white border rounded-full px-1 text-black"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {form.image.length > 0 && (
-                  <div>
-                    <p className="text-xs text-black mb-1">Other Images</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {form.image.map((img, i) => (
-                        <div key={i} className="relative w-20 h-20">
-                          <img
-                            src={img}
-                            className="rounded-md w-full h-full object-cover"
-                          />
-                          <button
-                            onClick={() => removeImage(i)}
-                            className="absolute top-1 right-1 bg-white border rounded-full px-1"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
-
-            {step === 2 && (
-              <section className="space-y-4">
-                <label className="text-sm font-medium text-black">
-                  Selling Method
-                </label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => update("sellingMethod", "fixed")}
-                    className={`flex-1 border rounded-lg p-4 text-left ${form.sellingMethod === "fixed" ? "bg-green-50 border-green-300" : "bg-white"}`}
-                  >
-                    <div className="font-semibold">Fixed Price</div>
-                    <div className="text-sm text-black">
-                      You can specify the price
-                    </div>
-                  </button>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-black">
-                    Selling Price
-                  </label>
-                  <input
-                    disabled={listed}
-                    type="number"
-                    value={form.price}
-                    onChange={(e) => update("price", Number(e.target.value))}
-                    className="w-full border bg-white text-black rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-              </section>
-            )}
-
-            {step === 3 && (
-              <section className="space-y-4">
-                <label className="text-sm font-medium text-black">
-                  Payment
-                </label>
-                <select
-                  disabled={listed}
-                  value={form.paymentMode}
-                  onChange={(e) =>
-                    update("paymentMode", e.target.value as PaymentMode)
-                  }
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="USD">US Dollar</option>
-                  <option value="CRYPTO">Cryptocurrency</option>
-                </select>
-
-                <div>
-                  <label className="text-sm font-medium text-black">
-                    Select a Bank Account
-                  </label>
-                  <select
-                    disabled={listed}
-                    value={form.bankAccount}
-                    onChange={(e) => update("bankAccount", e.target.value)}
-                    className="w-full border bg-white rounded-md px-3 py-2"
-                  >
-                    <option value="">Select account...</option>
-                    {bankAccounts.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.bankName} • {b.accountNumber}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </section>
-            )}
-
-            {step === 4 && (
-              <section className="space-y-4">
-                <label className="text-sm font-medium text-black">
-                  Transaction
-                </label>
-                <div className="space-y-3">
-                  <div
-                    className={`border rounded-lg p-4 ${form.deliveryType === "shipping" ? "" : "bg-white"}`}
-                  >
-                    <div className="font-semibold">Time of Sale</div>
-                    <div className="text-sm text-black">
-                      The transaction is initiated when the buyer agrees to
-                      purchase the item
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4 bg-green-50">
-                    <div className="font-semibold">Item Delivered</div>
-                    <div className="text-sm text-black">
-                      The seller has shipped the item, and the delivery service
-                      has confirmed delivery.
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {step === 5 && (
-              <section className="space-y-4">
-                <label className="text-sm font-medium text-black">
-                  Delivery
-                </label>
-                <select
-                  value={form.deliveryType}
-                  onChange={(e) =>
-                    update("deliveryType", e.target.value as DeliveryType)
-                  }
-                  className="w-full border rounded-md px-3 py-2"
-                >
-                  <option value="shipping">Shipping</option>
-                  <option value="pickup">Local pickup</option>
-                </select>
-
-                <div className="border rounded-xl p-4 bg-white">
-                  <div className="font-medium">
-                    {
-                      addresses.find((a) => a.id === form.selectedAddressId)
-                        ?.name
-                    }
-                  </div>
-                  <div className="text-sm text-black">
-                    {
-                      addresses.find((a) => a.id === form.selectedAddressId)
-                        ?.address
-                    }
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <button
-                    onClick={() => {
-                      setSelectedAddressLocal(form.selectedAddressId);
-                      setShowAddressModal(true);
-                    }}
-                    className="px-3 py-2 bg-white border rounded-md"
-                  >
-                    Select Address
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-black mb-1">
-                      Weight
-                    </label>
-                    <input
-                      disabled={listed}
-                      type="number"
-                      value={form.weight}
-                      onChange={(e) => update("weight", Number(e.target.value))}
-                      className="border rounded-md px-3 py-2"
-                      placeholder="Weight"
-                    />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-black mb-1">
-                      Length
-                    </label>
-                    <input
-                      disabled={listed}
-                      type="number"
-                      value={form.length}
-                      onChange={(e) => update("length", Number(e.target.value))}
-                      className="border rounded-md px-3 py-2"
-                      placeholder="Length"
-                    />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-black mb-1">
-                      Width
-                    </label>
-                    <input
-                      disabled={listed}
-                      type="number"
-                      value={form.width}
-                      onChange={(e) => update("width", Number(e.target.value))}
-                      className="border rounded-md px-3 py-2"
-                      placeholder="Width"
-                    />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-black mb-1">
-                      Height
-                    </label>
-                    <input
-                      disabled={listed}
-                      type="number"
-                      value={form.height}
-                      onChange={(e) => update("height", Number(e.target.value))}
-                      className="border rounded-md px-3 py-2"
-                      placeholder="Height"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-black">
-                    Shipping Company
-                  </label>
-                  <input
-                    disabled={listed}
-                    value={form.shippingCompany}
-                    onChange={(e) => update("shippingCompany", e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
-                  />
-                </div>
-              </section>
-            )}
-
-            {step === 6 && (
-              <section>
-                <label className="text-sm font-medium text-black">
-                  Privacy
-                </label>
-                <select
-                  disabled={listed}
-                  value={form.privacy}
-                  onChange={(e) => update("privacy", e.target.value as Privacy)}
-                  className="w-full border rounded-md px-3 py-2"
-                >
-                  <option value="ALMOST_NOTHING">Almost Nothing</option>
-                  <option value="SOME">Some Info</option>
-                  <option value="EVERYTHING">Everything</option>
-                </select>
-              </section>
-            )}
-
-            {step === 7 && (
-              <section>
-                <label className="text-sm font-medium text-black">Buyer</label>
-                <div className="space-y-3 mt-3">
-                  {[1, 2, 3, 4, 5].map((lvl) => (
-                    <div
-                      key={lvl}
-                      onClick={() => update("buyerLevel", lvl)}
-                      className={`border rounded-md p-4 ${form.buyerLevel === lvl ? "bg-green-50" : "bg-white"}`}
-                    >
-                      <div className="font-semibold">
-                        Level {lvl} •{" "}
-                        {lvl === 2 ? "Government ID Validation" : ""}
-                      </div>
-                      <div className="text-sm text-black">
-                        Description for level {lvl}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {step === 8 && (
-              <section>
-                <label className="text-sm font-medium text-black">Taxes</label>
-                <select
-                  disabled={listed}
-                  value={form.taxCode}
-                  onChange={(e) => update("taxCode", e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 mt-3"
-                >
-                  <option value="">Select Tax</option>
-                  {taxOptions.map((t) => (
-                    <option
-                      key={t.code}
-                      value={`${t.code}`}
-                    >{`${t.name} (${t.code})`}</option>
-                  ))}
-                </select>
-              </section>
-            )}
-
-            {step === 9 && <ListingPreview form={form} addresses={addresses} />}
-          </div>
-
-          <div className="flex justify-between items-center mt-6">
-            <div>
-              {onCancel && (
-                <button
-                  onClick={onCancel}
-                  className="border px-4 py-2 rounded-md text-sm"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={onPrev}
-                disabled={step === 0}
-                className="px-4 py-2 border rounded-md text-sm disabled:opacity-40"
-              >
-                Back
-              </button>
-              <button
-                onClick={onNext}
-                className="px-4 py-2 bg-green-500 text-white rounded-md text-sm"
-              >
-                {step === steps.length - 1
-                  ? submitting
-                    ? "Saving..."
-                    : "Save Listing"
-                  : "Next"}
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
+      {/* Address Modal */}
       <Modal
         isOpen={showAddressModal}
         onClose={() => setShowAddressModal(false)}
-        title="Address"
+        title="Select Address"
         size="lg"
         zIndex={100}
       >
         <div className="space-y-4">
           <div className="flex gap-3">
             <input
-              placeholder="Search"
-              className="flex-1 border rounded-md px-3 py-2"
+              placeholder="Search addresses..."
+              value={addressSearch}
+              onChange={(e) => setAddressSearch(e.target.value)}
+              className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-black
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; flex-1"
             />
-            <button className="px-4 py-2 bg-green-500 text-white rounded-md">
-              Add New Address
-            </button>
+            <button className="btn-primary whitespace-nowrap">Add New</button>
           </div>
 
-          <p className="text-sm text-gray-600">
-            Here, you can manage your addresses.
+          <p className="text-sm text-muted-foreground">
+            Select a shipping address for this listing.
           </p>
 
-          <div className="border rounded-md">
-            {addresses.map((a) => (
+          <div className="space-y-2">
+            {filteredAddresses.map((a) => (
               <div
                 key={a.id}
-                className={`p-4 flex justify-between items-start ${selectedAddressLocal === a.id ? "border-2 border-green-300 bg-white" : "bg-white"}`}
+                onClick={() => setSelectedAddressLocal(a.id)}
+                className={`option-card cursor-pointer flex justify-between items-start ${
+                  selectedAddressLocal === a.id
+                    ? "option-card-active"
+                    : "option-card-inactive"
+                }`}
               >
                 <div>
-                  <div className="font-semibold text-black">
-                    {a.name}{" "}
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2">
-                      {a.type}
-                    </span>
+                  <div className="font-semibold text-black flex items-center gap-2">
+                    {a.name}
+                    <span className="tag-pill text-[10px]">{a.type}</span>
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">{a.address}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={listed}
-                    onClick={() => setSelectedAddressLocal(a.id)}
-                    className="px-3 py-1 border rounded-md text-black"
-                  >
-                    Select
-                  </button>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {a.address}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex text-black justify-end gap-3 pt-2">
             <button
               onClick={() => setShowAddressModal(false)}
-              className="px-4 py-2 border rounded-md"
+              className="btn-secondary"
             >
               Cancel
             </button>
@@ -1170,9 +1062,9 @@ export function CreateEditListingForm({
                   setShowAddressModal(false);
                 }
               }}
-              className="px-4 py-2 bg-green-500 text-white rounded-md"
+              className="btn-primary"
             >
-              Select Address
+              Confirm Address
             </button>
           </div>
         </div>

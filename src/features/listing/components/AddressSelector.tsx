@@ -83,7 +83,7 @@ export function AddressSelector({
                 selectedId === addr.id ? "bg-gray-100" : ""
               }`}
             >
-              <div className="font-medium">{addr.name}</div>
+              <div className="font-medium text-black">{addr.name}</div>
               <div className="text-sm text-gray-500">
                 {addr.address}, {addr.city}, {addr.state} {addr.zip}
               </div>

@@ -1,19 +1,17 @@
+import { API_BASE_URL } from "@/src/lib";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json(); // ← FIX HERE
+    const body = await req.json();
 
-    const response = await fetch(
-      "http://192.168.12.96:8110/public-api/v1/product-listing/create",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
+    const response = await fetch(`${API_BASE_URL}/product-listing/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify(body),
+    });
 
     const data = await response.json();
 

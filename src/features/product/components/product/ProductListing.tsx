@@ -100,17 +100,12 @@ export function ProductsList() {
 
   const handleViewProduct = async (id: string, userId: string) => {
     try {
-      setIsLoading(true);
-
       const product = await fetchProductById(id, userId);
-
       setSelectedProduct(product);
       setShowViewModal(true);
     } catch (error) {
       console.error("View product error:", error);
       toast.error("Failed to load product details");
-    } finally {
-      setIsLoading(false);
     }
   };
 

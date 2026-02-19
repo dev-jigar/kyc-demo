@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const search = searchParams.get("search") || undefined;
-  const sellerId = searchParams.get("sellerId") || undefined; // ✅ ADD THIS
+  const name = searchParams.get("name") || undefined;
+  const sellerId = searchParams.get("sellerId") || undefined;
   const page = parseInt(searchParams.get("page") || "1", 10);
   const perPage = parseInt(searchParams.get("perPage") || "8", 10);
   const orgId = "00000000-0000-0000-0000-000000000000";
@@ -15,8 +15,7 @@ export async function GET(req: NextRequest) {
     const resp = await getProductListing<
       IApiSuccessResponse<IPagedResponse<any>>
     >({
-      ...(search ? { name: search } : {}),
-      ...(sellerId ? { sellerId } : {}),
+      ...(name ? { name } : {}),
       ...(sellerId ? { sellerId } : {}),
       orgId,
       $page: page,

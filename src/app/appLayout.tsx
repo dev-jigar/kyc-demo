@@ -19,13 +19,13 @@ export function AppShellLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleNavigate = (route: string) => {
-    router.push(route);
+  const handleNavigate = (path: string) => {
+    router.push(path);
   };
 
   return (
     <KycShell
-      activeKey={pathname} // auto active from URL
+      activeKey={pathname}
       onNavigate={handleNavigate}
       breadcrumb={breadcrumb}
       title={title}

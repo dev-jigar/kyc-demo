@@ -5,6 +5,15 @@ import { Modal } from "@/src/components";
 import { CreateEditListingForm } from "./CreateEditListingForm";
 import { ProductListingItem } from "../types/response";
 import { sellerId } from "@/src/app/api/product-listing/route";
+import {
+  Plus,
+  Edit3,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Package,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type ListingRow = {
   id: string;
@@ -16,7 +25,9 @@ type ListingRow = {
 };
 
 export function ProductListing() {
+  const router = useRouter();
   const [listings, setListings] = React.useState<ListingRow[]>([]);
+  const [searchText, setSearchText] = React.useState("");
   const [loading, setLoading] = React.useState<boolean>(false);
   const [page, setPage] = React.useState<number>(1);
   const [totalPages, setTotalPages] = React.useState<number>(1);
@@ -36,6 +47,7 @@ export function ProductListing() {
   const [libraryLoading, setLibraryLoading] = React.useState(false);
   const [selectedLibraryItem, setSelectedLibraryItem] =
     React.useState<ProductListingItem | null>(null);
+  const [librarySearch, setLibrarySearch] = React.useState("");
 
   const itemsPerPage = 4;
 
@@ -52,12 +64,16 @@ export function ProductListing() {
 
   /* ---------------- Fetch ---------------- */
 
-  const fetchListings = async (pageNumber: number): Promise<void> => {
+  const fetchListings = async (
+    pageNumber: number,
+    search?: string,
+  ): Promise<void> => {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/product-listing/by-seller-id?sellerId=${sellerId}&page=${pageNumber}&limit=${itemsPerPage}`,
+        `/api/product-listing/by-seller-id?sellerId=${sellerId}&page=${pageNumber}&limit=${itemsPerPage}&name=${encodeURIComponent(search ?? "")}`,
       );
+
       if (!res.ok) throw new Error("Failed to fetch listings");
       const json: ProductListingApiWrapper = await res.json();
       const products = json.data;
@@ -73,8 +89,8 @@ export function ProductListing() {
   };
 
   React.useEffect(() => {
-    fetchListings(page);
-  }, [page]);
+    fetchListings(page, searchText);
+  }, [page, searchText,setShowFormModal]);
 
   const openLibrary = async () => {
     setShowCreateChoiceModal(false);
@@ -109,93 +125,136 @@ export function ProductListing() {
     setShowFormModal(true);
   };
 
+  const statusColors: Record<string, string> = {
+    LISTED: "bg-primary/10 text-primary border border-primary/20",
+    LISTING_STARTED: "bg-muted text-muted-foreground border border-border",
+  };
+
+  const filteredLibraryItems = libraryItems.filter((it) => {
+    const query = librarySearch.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      (it.name ?? "").toLowerCase().includes(query) ||
+      (it.description ?? "").toLowerCase().includes(query)
+    );
+  });
+
   return (
-    <div className="p-8">
-      <div className="bg-white border rounded-2xl shadow-sm">
+    <div className="max-w-7xl mx-auto mt-6">
+      <div className="section-card">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gray-50 rounded-t-2xl">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Products Listing
-          </h2>
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+              <Package className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-black">Product Listings</h2>
+              <p className="text-sm text-muted-foreground">
+                {totalItems} items
+              </p>
+            </div>
+          </div>
 
           <button
             onClick={() => {
               setShowCreateChoiceModal(true);
             }}
-            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
+            className="btn-primary flex items-center gap-2"
           >
-            + Create Listing
+            <Plus className="w-4 h-4" />
+            Create Listing
           </button>
+        </div>
+
+        <div className="px-6 py-3 border-b border-border/60">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              placeholder="Search listings..."
+              onChange={(e) => {
+                setPage(1);
+                setSearchText(e.target.value);
+              }}
+              className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm
+           transition-all duration-200 ease-out
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; pl-9 py-2.5 text-black"
+            />
+          </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
-              <tr>
-                <th className="text-left px-6 py-3">Name</th>
-                <th className="text-left px-6 py-3">Selling Method</th>
-                <th className="text-left px-6 py-3">Tags</th>
-                <th className="text-left px-6 py-3">Status</th>
-                <th className="text-left px-6 py-3">Price</th>
-                <th className="text-left px-6 py-3">Action</th>
+          <table className="w-full listing-table">
+            <thead>
+              <tr className="border-b border-border bg-secondary/30">
+                <th>Name</th>
+                <th>Method</th>
+                <th>Tags</th>
+                <th>Status</th>
+                <th>Price</th>
+                <th>Action</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y">
+            <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-gray-400">
-                    Loading listings...
+                  <td colSpan={6} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-3 border-muted border-t-primary rounded-full animate-spin" />
+                      <span className="text-sm text-muted-foreground">
+                        Loading listings...
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ) : listings.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-gray-400">
-                    No listings found
+                  <td colSpan={6} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-2">
+                      <Package className="w-10 h-10 text-muted-foreground/40" />
+                      <span className="text-muted-foreground">
+                        No listings found
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 listings.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 font-medium text-gray-800">
-                      {item.name}
+                  <tr key={item.id}>
+                    <td className="font-semibold text-black">{item.name}</td>
+                    <td className="text-muted-foreground capitalize">
+                      {item.method}
                     </td>
-
-                    <td className="px-6 py-4 text-gray-600">{item.method}</td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
+                    <td>
+                      <div className="flex flex-wrap gap-1.5">
                         {item.tags.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="text-xs px-3 py-1 border rounded-full bg-gray-100 text-gray-700"
-                          >
+                          <span key={i} className="tag-pill text-[11px]">
                             #{tag}
                           </span>
                         ))}
                       </div>
                     </td>
-
-                    <td className="px-6 py-4">
-                      <span className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    <td>
+                      <span
+                        className={`text-xs px-3 py-1 rounded-full font-medium ${statusColors[item.status] || statusColors.DRAFT}`}
+                      >
                         {item.status}
                       </span>
                     </td>
-
-                    <td className="px-6 py-4 font-semibold text-gray-800">
+                    <td className="font-bold text-black">
                       ${item.price.toFixed(2)}
                     </td>
-
-                    <td className="px-6 py-4">
+                    <td>
                       <button
                         onClick={() => {
-                          setFormMode("edit");
-                          setEditingListingId(item.id);
-                          setShowFormModal(true);
+                          router.push(`/listing/${item.id}`);
                         }}
-                        className="text-sm px-3 py-1 border rounded-md hover:bg-gray-100 text-black"
+                        className="btn-ghost hover:text-black transition-colors duration-200 text-xs flex items-center gap-1.5"
                       >
+                        <Edit3 className="w-3.5 h-3.5" />
                         Edit
                       </button>
                     </td>
@@ -207,26 +266,28 @@ export function ProductListing() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between p-6 border-t bg-gray-50 rounded-b-2xl">
-          <span className="text-sm text-gray-500">
-            Page {page} of {totalPages} • {totalItems} total listings
+        <div className="flex items-center justify-between p-6 border-t border-border">
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages} • {totalItems} listings
           </span>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 border rounded-lg text-sm disabled:opacity-40"
+              className="btn-secondary px-3 py-1.5 text-black"
             >
-              Prev
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
 
             {[...Array(totalPages)].map((_, i) => (
               <button
                 key={i}
                 onClick={() => setPage(i + 1)}
-                className={`px-3 py-1 rounded-lg text-sm border ${
-                  page === i + 1 ? "bg-gray-800 text-white" : "bg-white"
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                  page === i + 1
+                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                    : "bg-card text-black border border-border hover:bg-secondary"
                 }`}
               >
                 {i + 1}
@@ -236,9 +297,9 @@ export function ProductListing() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 border rounded-lg text-sm disabled:opacity-40"
+              className="btn-secondary px-3 py-1.5 text-black"
             >
-              Next
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -248,19 +309,15 @@ export function ProductListing() {
         isOpen={showFormModal}
         onClose={() => setShowFormModal(false)}
         title={formMode === "create" ? "Create Listing" : "Edit Listing"}
+        size="xl"
       >
         <CreateEditListingForm
           mode={formMode}
           listingId={editingListingId}
           staticData={selectedLibraryItem}
-          onCancel={() => {
-            setShowFormModal(false);
-            setSelectedLibraryItem(null);
-          }}
+          onCancel={() => setShowFormModal(false)}
           onSuccess={() => {
             setShowFormModal(false);
-            fetchListings(page);
-            setSelectedLibraryItem(null);
           }}
         />
       </Modal>
@@ -268,20 +325,26 @@ export function ProductListing() {
       <Modal
         isOpen={showCreateChoiceModal}
         onClose={() => setShowCreateChoiceModal(false)}
-        title="Select"
+        title="Create Listing"
       >
-        <div className="text-center py-6">
-          <h3 className="text-2xl text-green-600 font-semibold mb-6">Select</h3>
-          <div className="flex gap-6 justify-center">
+        <div className="px-8 pt-6 pb-8">
+          <p className="text-sm md:text-base text-muted-foreground text-center mb-6">
+            Would you like to select an item from your library?
+          </p>
+
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6 justify-center">
             <button
               onClick={() => openLibrary()}
-              className="w-80 p-6 bg-green-50 rounded-lg border"
+              className="group w-full md:w-80 rounded-2xl border border-emerald-300 bg-gradient-to-br from-emerald-50 to-emerald-100/70 px-6 py-6 text-left shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-200"
             >
-              <div className="text-xl font-semibold">Yes</div>
-              <div className="text-sm text-gray-500">
-                Select the item from your library.
+              <div className="text-lg font-semibold text-black mb-1 group-hover:text-emerald-900">
+                Yes
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Select an existing item from your library.
               </div>
             </button>
+
             <button
               onClick={() => {
                 setShowCreateChoiceModal(false);
@@ -289,73 +352,83 @@ export function ProductListing() {
                 setEditingListingId(null);
                 setShowFormModal(true);
               }}
-              className="w-80 p-6 bg-green-50 rounded-lg border"
+              className="group w-full md:w-80 rounded-2xl border border-border bg-muted/60 px-6 py-6 text-left hover:bg-muted/90 hover:border-muted-foreground/40 transition-all duration-200"
             >
-              <div className="text-xl font-semibold">No</div>
-              <div className="text-sm text-gray-500">
-                Create the item from dashboard.
+              <div className="text-lg font-semibold text-black mb-1">
+                No
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Create a new item from scratch.
               </div>
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Library modal */}
       <Modal
         isOpen={showLibraryModal}
         onClose={() => setShowLibraryModal(false)}
-        title="Select from library"
+        title="Select from Library"
       >
-        <div className="space-y-4">
-          <input
-            placeholder="Search"
-            className="w-full border rounded-md px-3 py-2"
-          />
+        <div className="px-8 pt-5 pb-4">
+          <div className="relative mb-5">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              placeholder="Search items..."
+              value={librarySearch}
+              onChange={(e) => setLibrarySearch(e.target.value)}
+              className="w-full rounded-xl border border-input bg-card px-4 py-2.5 pl-9 text-sm text-black transition-all duration-200 ease-out placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
 
           {libraryLoading ? (
-            <p className="text-center text-sm text-gray-500">Loading...</p>
-          ) : libraryItems.length === 0 ? (
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-muted-foreground">
+              Loading...
+            </p>
+          ) : filteredLibraryItems.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground">
               No products found.
             </p>
           ) : (
-            <div className="space-y-3">
-              {libraryItems.map((it) => (
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+              {filteredLibraryItems.map((it) => (
                 <div
                   key={it.id}
-                  className="p-3 border rounded-md flex justify-between items-center"
+                  className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 hover:border-primary/30 hover:bg-secondary/40 transition-colors duration-200"
                 >
-                  <div>
-                    <div className="font-semibold text-black">{it.name}</div>
-                    <div className="text-sm text-black">{it.description}</div>
+                  <div className="pr-4">
+                    <div className="text-sm font-semibold text-black">
+                      {it.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground line-clamp-2">
+                      {it.description}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => openCreateWithItem(it)}
-                      className="px-4 py-2 bg-green-500 text-white rounded-md"
-                    >
-                      Select
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => openCreateWithItem(it)}
+                    className="btn-primary px-4 py-2 text-xs"
+                  >
+                    Select
+                  </button>
                 </div>
               ))}
             </div>
           )}
+        </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              onClick={() => setShowLibraryModal(false)}
-              className="px-4 py-2 border rounded-md"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => openCreateWithItem()}
-              className="px-4 py-2 bg-green-500 text-white rounded-md"
-            >
-              Create
-            </button>
-          </div>
+        <div className="border-t border-border px-8 py-4 flex justify-end gap-3">
+          <button
+            onClick={() => setShowLibraryModal(false)}
+            className="btn-secondary px-5"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => openCreateWithItem()}
+            className="btn-primary px-5"
+          >
+            Create New
+          </button>
         </div>
       </Modal>
     </div>
