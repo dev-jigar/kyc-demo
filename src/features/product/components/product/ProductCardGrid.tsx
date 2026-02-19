@@ -1,32 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { ProductCard } from "./ProductCard";
 import { Product } from "../../types";
-import { Inbox } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
+import { Button } from "@/src/components";
+
+type ProductCardGridProps = {
+  products: Product[];
+  onView: (id: string, userId: string) => Promise<void>;
+  searchQuery: string;
+  setShowAddModal: Dispatch<SetStateAction<boolean>>;
+};
 
 export function ProductCardGrid({
   products,
   onView,
-}: {
-  products: Product[];
-  onView: (id: string, userId: string) => void;
-}) {
+  searchQuery,
+  setShowAddModal,
+}: ProductCardGridProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 py-20 px-6">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <Inbox size={32} className="text-gray-400" />
+      <div className="flex items-center justify-center h-full min-h-[500px]">
+        <div className="flex flex-col items-center gap-6 text-center max-w-md">
+          <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-3xl flex items-center justify-center shadow-lg">
+            <Inbox size={48} className="text-blue-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 mb-2">
+              {searchQuery ? "No products found" : "No products yet"}
+            </p>
+            <p className="text-base text-slate-600 leading-relaxed mb-6">
+              {searchQuery
+                ? "Try adjusting your search criteria to find what you're looking for"
+                : "Your product catalog is empty. Create your first product to get started"}
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r  to-cyan-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+          >
+            <Plus size={20} />
+            Create First Product
+          </Button>
         </div>
-        <p className="text-base font-semibold text-gray-900 mb-2">
-          No products found
-        </p>
-        <p className="text-sm text-gray-600 text-center max-w-md">
-          Try adjusting your search criteria or create a new product to get
-          started
-        </p>
       </div>
     );
   }

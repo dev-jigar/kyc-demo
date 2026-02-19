@@ -8,7 +8,7 @@ export default function ProductListingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppShellLayout breadcrumb={["Listing"]} title="Listing">
+    <AppShellLayout breadcrumb={["Product", "Product Listing"]} title="Listing">
       {children}
     </AppShellLayout>
   );

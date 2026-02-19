@@ -13,7 +13,7 @@ import { ProductCardGrid } from "./ProductCardGrid";
 import { ProductDetailsView } from "./ProductDetailsView";
 import CreateItemForm from "./AddProduct";
 import { Product, ProductDetails } from "../../types";
-import { Plus } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
 
 const PAGE_SIZE = 9;
 
@@ -138,18 +138,39 @@ export function ProductsList() {
         }
       />
 
-      {isLoading ? (
-        <div className="text-center py-10 text-slate-500">
-          Loading products...
-        </div>
-      ) : (
-        <ProductCardGrid
-          products={products}
-          onView={async (id, userId) => {
-            handleViewProduct(id, userId);
-          }}
-        />
-      )}
+      <div className="flex-1">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full min-h-[500px]">
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full animate-spin opacity-20"></div>
+                <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 border-3 border-transparent border-t-blue-600 border-r-cyan-600 rounded-full animate-spin"></div>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-semibold text-slate-900 mb-1">
+                  Loading products...
+                </p>
+                <p className="text-sm text-slate-500">
+                  Please wait while we fetch your products
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6">
+            <ProductCardGrid
+              searchQuery={searchQuery}
+              products={products}
+              setShowAddModal={setShowAddModal}
+              onView={async (id, userId) => {
+                handleViewProduct(id, userId);
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       {totalItems > 0 && (
         <PaginationFooter
