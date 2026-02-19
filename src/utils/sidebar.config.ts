@@ -8,11 +8,6 @@ export const SIDEBAR_NAV: NavItem[] = [
   {
     key: "kyc",
     label: "KYC",
-    // children: [
-    //   // { key: "kyc", label: "KYC" },
-    //   // { key: "kyc-configurations", label: "Configurations" },
-    //   // { key: "kyc-reports", label: "Reports" },
-    // ],
   },
   {
     key: "product",

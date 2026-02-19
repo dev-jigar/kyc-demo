@@ -159,7 +159,7 @@ export function ProductsList() {
             </div>
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-1">
             <ProductCardGrid
               searchQuery={searchQuery}
               products={products}
