@@ -3,8 +3,7 @@ import React from "react";
 import { ProductListingApiWrapper } from "../types";
 import { Modal } from "@/src/components";
 import { CreateEditListingForm } from "./CreateEditListingForm";
-import { ProductListingItem } from "../types/response";
-import { sellerId } from "@/src/app/api/product-listing/route";
+import { ProductListingItem, StaticProductData } from "../types/response";
 import {
   Plus,
   Edit3,
@@ -14,6 +13,7 @@ import {
   Package,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { USERID } from "@/src/lib";
 
 type ListingRow = {
   id: string;
@@ -46,12 +46,10 @@ export function ProductListing() {
   );
   const [libraryLoading, setLibraryLoading] = React.useState(false);
   const [selectedLibraryItem, setSelectedLibraryItem] =
-    React.useState<ProductListingItem | null>(null);
+    React.useState<StaticProductData | null>(null);
   const [librarySearch, setLibrarySearch] = React.useState("");
 
   const itemsPerPage = 4;
-
-  /* ---------------- Mapping ---------------- */
 
   const mapToRow = (item: ProductListingItem): ListingRow => ({
     id: item.id,
@@ -62,8 +60,7 @@ export function ProductListing() {
     tags: item.listingTags?.map((t) => t?.tag?.name).filter(Boolean) ?? [],
   });
 
-  /* ---------------- Fetch ---------------- */
-
+  console.log("sss", USERID)
   const fetchListings = async (
     pageNumber: number,
     search?: string,
@@ -71,7 +68,7 @@ export function ProductListing() {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/product-listing/by-seller-id?sellerId=${sellerId}&page=${pageNumber}&limit=${itemsPerPage}&name=${encodeURIComponent(search ?? "")}`,
+        `/api/product-listing/by-seller-id?sellerId=${USERID}&page=${pageNumber}&limit=${itemsPerPage}&name=${encodeURIComponent(search ?? "")}`,
       );
 
       if (!res.ok) throw new Error("Failed to fetch listings");
@@ -90,7 +87,7 @@ export function ProductListing() {
 
   React.useEffect(() => {
     fetchListings(page, searchText);
-  }, [page, searchText,setShowFormModal]);
+  }, [page, searchText, setShowFormModal]);
 
   const openLibrary = async () => {
     setShowCreateChoiceModal(false);
@@ -101,7 +98,7 @@ export function ProductListing() {
       const orgId = "00000000-0000-0000-0000-000000000000";
 
       const res = await fetch(
-        `api/product-listing/products?ownerId=${sellerId}&orgId=${orgId}`,
+        `api/product-listing/products?ownerId=${USERID}&orgId=${orgId}`,
       );
 
       if (!res.ok) throw new Error("Failed to fetch tags");
@@ -118,11 +115,14 @@ export function ProductListing() {
   };
 
   const openCreateWithItem = (item?: ProductListingItem) => {
-    setSelectedLibraryItem(item ?? null);
-    setFormMode("create");
-    setEditingListingId(null);
-    setShowLibraryModal(false);
-    setShowFormModal(true);
+    setFormMode("create")
+    if (item) {
+      sessionStorage.setItem(
+        "selectedLibraryItem",
+        JSON.stringify(item)
+      );
+    }
+    router.push("/listing/create");
   };
 
   const statusColors: Record<string, string> = {
@@ -149,7 +149,7 @@ export function ProductListing() {
               <Package className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">
+              <h2 className="text-xl font-bold text-black">
                 Product Listings
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -267,7 +267,6 @@ export function ProductListing() {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between p-6 border-t border-border">
           <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages} • {totalItems} listings
@@ -286,11 +285,10 @@ export function ProductListing() {
               <button
                 key={i}
                 onClick={() => setPage(i + 1)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                  page === i + 1
-                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
-                    : "bg-card text-black border border-border hover:bg-secondary"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${page === i + 1
+                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                  : "bg-card text-black border border-border hover:bg-secondary"
+                  }`}
               >
                 {i + 1}
               </button>
@@ -350,9 +348,8 @@ export function ProductListing() {
             <button
               onClick={() => {
                 setShowCreateChoiceModal(false);
-                setFormMode("create");
                 setEditingListingId(null);
-                setShowFormModal(true);
+                router.push("/product");
               }}
               className="group w-full md:w-80 rounded-2xl border border-border bg-muted/60 px-6 py-6 text-left hover:bg-muted/90 hover:border-muted-foreground/40 transition-all duration-200"
             >
@@ -421,7 +418,7 @@ export function ProductListing() {
         <div className="border-t border-border px-8 py-4 flex justify-end gap-3">
           <button
             onClick={() => setShowLibraryModal(false)}
-            className="btn-secondary px-5"
+            className="btn-secondary text-black px-5"
           >
             Cancel
           </button>

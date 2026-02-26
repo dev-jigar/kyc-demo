@@ -154,7 +154,7 @@ export default function CreateItemForm({
     };
     // const geolocation = await getGeolocation();
     const payload = {
-      userId: "bb7274c6-ec2a-4957-83e3-1adf92fe50c0",
+      userId: "bdf9d20c-3261-473d-91a9-c21a0bd593e7",
       deviceId: "016766f6-457d-43f1-a45d-4a6d69638c65",
       recipientAddress: "0x1234567890123456789012345678901234567890",
       platform: "ethereum",
@@ -283,7 +283,7 @@ export default function CreateItemForm({
           </div>
 
           {/* NAME */}
-          <div className="space-y-2">
+          <div className="space-y-2 text-black">
             <Controller
               name="name"
               control={control}
@@ -307,7 +307,7 @@ export default function CreateItemForm({
           </div>
 
           {/* DESCRIPTION */}
-          <div className="space-y-2">
+          <div className="space-y-2 text-black">
             <Controller
               name="description"
               control={control}
@@ -336,7 +336,7 @@ export default function CreateItemForm({
       {/* TAG SECTION */}
       <Card>
         <SectionTitle> Tags</SectionTitle>
-        <div className="p-4 grid grid-cols-1 gap-4">
+        <div className="p-4 grid grid-cols-1 gap-4 text-black">
           <div>
             <Controller
               name="tagsInput"
@@ -370,7 +370,7 @@ export default function CreateItemForm({
               {tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-gray-200 rounded-full text-sm"
+                  className="px-3 py-1 bg-gray-200 rounded-full text-black"
                 >
                   {tag}
                   <button
@@ -428,7 +428,7 @@ export default function CreateItemForm({
       {/* PRIVACY SECTION */}
       <Card>
         <SectionTitle> Privacy Settings</SectionTitle>
-        <div className="p-4 grid grid-cols-2 gap-4">
+        <div className="p-4 grid grid-cols-2 gap-4 text-black">
           <Controller
             name="privacy"
             control={control}

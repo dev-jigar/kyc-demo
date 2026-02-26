@@ -1,8 +1,6 @@
 import { getProductListingById } from "@/src/sdk";
 import { NextRequest, NextResponse } from "next/server";
 
-export const sellerId = "bb7274c6-ec2a-4957-83e3-1adf92fe50c0";
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 

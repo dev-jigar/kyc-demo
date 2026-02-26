@@ -13,8 +13,8 @@ import {
   PaymentMode,
   DeliveryType,
   Privacy,
+  StaticProductData,
 } from "../types/response";
-import { sellerId } from "@/src/app/api/product-listing/route";
 import ListingPreview from "./ListingPreview";
 import {
   Upload,
@@ -33,16 +33,20 @@ import {
 } from "../types/listingTypes";
 import { defaultData } from "../types/defaultData";
 import { buyerLevels, stepIcons, steps } from "../constant";
+import AddAddressModal from "./AddAddress";
+import { USERID } from "@/src/lib";
 
 export function CreateEditListingForm({
   mode,
   listingId,
   onCancel,
   onSuccess,
-  staticData,
 }: CreateEditListingFormProps) {
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [listed, setListed] = useState(false);
+  const [orgId, setOrgId] = useState<string>(null);
+  const [productId, setProductId] = useState<string>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [form, setForm] = useState<ListingForm>(defaultData);
   const [loadingData, setLoadingData] = useState(false);
@@ -51,6 +55,7 @@ export function CreateEditListingForm({
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [step, setStep] = useState<number>(0);
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false);
+  const [showAddAddressDialog, setShowAddAddressDialog] = useState(false);
   const [tagOptions, setTagOptions] = useState<TagData[]>([]);
   const [taxOptions, setTaxOptions] = useState<
     { code: string; name: string }[]
@@ -60,28 +65,53 @@ export function CreateEditListingForm({
   >(null);
   const [tagSelectOption, setTagSelectOption] = useState<Option | null>(null);
 
-  const userId = sellerId ?? "10cea43f-d816-4895-8670-86f2460e49a3";
+  const userId = USERID
 
-  const mapStaticToFormCreate = (
-    data: ProductListingItem,
+  const mapStaticProductToForm = (
+    data: StaticProductData,
   ): Partial<ListingForm> => ({
-    name: data?.name ?? "",
-    description: data?.description ?? "",
-    tags:
-      data?.listingTags?.map((t: ListingTag) => ({
-        id: t?.tag?.id,
-        name: t?.tag?.name,
-      })) ?? [],
-
-    thumbnail: data?.listingMedia?.thumbnailURL ?? null,
-    image: data?.listingMedia?.images ?? [],
-    sellingMethod: data?.sellingMethod ?? "fixed",
-    price: Number(
-      data?.sellingMethod === "auction"
-        ? data?.startingPrice
-        : (data?.price ?? 0),
-    ),
+    name: data.name ?? "",
+    description: data.description ?? "",
+    thumbnail: data.image ?? "",
+    image: data.image ? [data.image] : [],
   });
+
+  const validateStep = (currentStep: number) => {
+    const newErrors: Record<string, string> = {};
+
+    if (currentStep === 0) {
+      if (!form.name?.trim()) newErrors.name = "Item name is required";
+      if (!form.description?.trim())
+        newErrors.description = "Description is required";
+    }
+
+    if (currentStep === 1) {
+      if (!form.price || form.price <= 0) newErrors.price = "Price is required";
+      if (!form.privacy) newErrors.privacy = "Privacy is required";
+      if (!form.paymentMode) newErrors.paymentMode = "Payment mode is required";
+      if (!form.bankAccount) newErrors.bankAccount = "Bank account is required";
+      if (!form.taxCode) newErrors.taxCode = "Tax code is required";
+    }
+
+    if (currentStep === 2) {
+      if (!form.deliveryType)
+        newErrors.deliveryType = "Delivery type is required";
+      if (!form.selectedAddressId)
+        newErrors.selectedAddressId = "Address is required";
+      if (!form.weight) newErrors.weight = "Weight is required";
+      if (!form.length) newErrors.length = "Length is required";
+      if (!form.width) newErrors.width = "Width is required";
+      if (!form.height) newErrors.height = "Height is required";
+    }
+
+    if (currentStep === 3) {
+      if (!form.buyerLevel) newErrors.buyerLevel = "Buyer level is required";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
 
   const filteredAddresses = addresses.filter((a) =>
     `${a.name} ${a.address} ${a.city} ${a.state}`
@@ -90,15 +120,21 @@ export function CreateEditListingForm({
   );
 
   React.useEffect(() => {
-    if (mode === "create" && staticData) {
-      const prefilled = mapStaticToFormCreate(staticData);
+    if (mode === "create") {
+      const stored = sessionStorage.getItem("selectedLibraryItem");
+      if (!stored) return;
+      console.log("this is the stored data", JSON.parse(stored))
+      const prefilled = mapStaticProductToForm(JSON.parse(stored));
+      setOrgId(JSON.parse(stored).orgId)
+      setProductId(JSON.parse(stored).id)
+      sessionStorage.removeItem("selectedLibraryItem");
 
       setForm((prev) => ({
         ...prev,
         ...prefilled,
       }));
     }
-  }, [mode, staticData]);
+  }, [mode]);
 
   const saveStepData = async (currentStep: number) => {
     try {
@@ -111,15 +147,15 @@ export function CreateEditListingForm({
 
       switch (currentStep) {
         case 0:
-          if (mode === "create" && staticData) {
+          if (mode === "create") {
             await fetch("/api/product-listing/create", {
               method: "POST",
               body: JSON.stringify({
-                productId: staticData.id,
+                productId: productId,
                 sellerId: userId,
                 name: form.name,
                 listingStatus: "LISTING_STARTED",
-                orgId: staticData.orgId,
+                orgId: orgId,
                 currentStep: "1",
                 description: form.description,
                 listingTags: form.tags.map((t) => t.id),
@@ -494,6 +530,9 @@ export function CreateEditListingForm({
   };
 
   const onNext = async () => {
+    const isValid = validateStep(step);
+
+    if (!isValid) return;
     await saveStepData(step);
 
     if (listingId) {
@@ -522,66 +561,97 @@ export function CreateEditListingForm({
 
   return (
     <>
-      <div className="h-screen bg-gradient-to-br from-emerald-50 via-background to-slate-100 p-6">
-        <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-md)]">
+      <div className="h-screen bg-gradient-to-br from-emerald-50 via-background to-slate-100">
+        <div className="mx-auto flex h-[80%] max-w-7xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-md)]">
           <div className="flex-shrink-0 border-b border-border/70 bg-card/80 backdrop-blur px-8 py-5">
             <Stepper
               steps={steps}
               active={step}
               onStepClick={(i) => setStep(i)}
             />
-
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/15">
-                <StepIcon className="h-6 w-6 text-primary" />
-              </div>
-
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  Step {step + 1} of {steps.length}
-                </div>
-
-                <h2 className="text-2xl font-bold text-foreground">
-                  {steps[step]}
-                </h2>
-              </div>
-            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-8 py-8">
+          <div className="flex-1 overflow-y-auto px-8 mt-3 mb-6">
             <div className="mx-auto w-full max-w-4xl rounded-2xl border border-border bg-card p-8 shadow-sm">
-              <div className="animate-fade-in space-y-6 text-black" key={step}>
+              <div className="mt-6 flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-primary/15">
+                  <StepIcon className="h-6 w-6 text-primary" />
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    Step {step + 1} of {steps.length}
+                  </div>
+
+                  <h2 className="text-2xl font-bold text-black">
+                    {steps[step]}
+                  </h2>
+                </div>
+              </div>
+              <div
+                className="animate-fade-in space-y-6 text-black mt-6"
+                key={step}
+              >
                 {step === 0 && (
                   <section className="space-y-5">
+                    {/* ITEM NAME */}
                     <div>
                       <label className="form-label text-black">Item Name</label>
+
                       <input
                         value={form.name}
                         onChange={(e) => update("name", e.target.value)}
-                        className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-black
-           transition-all duration-200 ease-out
-           placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;"
+                        className={`w-full rounded-xl border px-4 py-3 text-sm bg-card text-foreground
+          transition-all duration-200 ease-out
+          placeholder:text-muted-foreground
+          focus:outline-none focus:ring-2
+          ${errors.name
+                            ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                            : "border-input focus:ring-primary/20 focus:border-primary"
+                          }`}
                         placeholder="Enter item name..."
                       />
+
+                      {errors.name && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.name}
+                        </p>
+                      )}
                     </div>
 
+                    {/* DESCRIPTION */}
                     <div>
                       <label className="form-label">Description</label>
+
                       <textarea
                         value={form.description}
                         onChange={(e) => update("description", e.target.value)}
-                        className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
-           transition-all duration-200 ease-out
-           placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; min-h-[25] resize-none"
+                        className={`w-full rounded-xl border px-4 py-3 text-sm bg-card text-foreground
+          transition-all duration-200 ease-out
+          placeholder:text-muted-foreground
+          focus:outline-none focus:ring-2 resize-none min-h-[90px]
+          ${errors.description
+                            ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                            : "border-input focus:ring-primary/20 focus:border-primary"
+                          }`}
                         placeholder="Describe your item..."
                       />
+
+                      {errors.description && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.description}
+                        </p>
+                      )}
                     </div>
 
+                    {/* TAGS */}
                     <div>
                       <label className="form-label">Tags</label>
-                      <div className="mt-2 flex gap-2 flex-wrap mb-4">
+
+                      <div
+                        className={`mt-2 flex gap-2 flex-wrap mb-2 rounded-xl p-2 border
+          ${errors.tags ? "border-red-500" : "border-transparent"}`}
+                      >
                         {form.tags.map((t) => (
                           <span key={t.id || t.name} className="tag-pill">
                             {t.name}
@@ -594,6 +664,7 @@ export function CreateEditListingForm({
                           </span>
                         ))}
                       </div>
+
                       <Select
                         disabled={listed}
                         value={tagSelectOption}
@@ -607,32 +678,63 @@ export function CreateEditListingForm({
                           }
                         }}
                       />
-                    </div>
-                    <label className="form-label">Upload Product Images</label>
-                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-border rounded-2xl bg-secondary/30 hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200 cursor-pointer group">
-                      <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
-                      <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                        Click to upload images
-                      </span>
-                      <input
-                        disabled={listed}
-                        type="file"
-                        multiple
-                        onChange={(e) => handleUpload(e.target.files)}
-                        className="hidden"
-                      />
-                    </label>
 
+                      {errors.tags && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.tags}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* IMAGE UPLOAD */}
+                    <div>
+                      <label className="form-label">
+                        Upload Product Images
+                      </label>
+
+                      <label
+                        className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl
+          transition-all duration-200 cursor-pointer group
+          ${errors.images
+                            ? "border-red-500 bg-red-50"
+                            : "border-border bg-secondary/30 hover:bg-secondary/60 hover:border-primary/30"
+                          }`}
+                      >
+                        <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
+
+                        <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                          Click to upload images
+                        </span>
+
+                        <input
+                          disabled={listed}
+                          type="file"
+                          multiple
+                          onChange={(e) => handleUpload(e.target.files)}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {errors.images && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.images}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* THUMBNAIL */}
                     {form.thumbnail && (
                       <div>
                         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
                           Thumbnail
                         </p>
+
                         <div className="relative w-28 h-28 group">
                           <img
                             src={form.thumbnail}
                             className="rounded-xl w-full h-full object-cover ring-2 ring-primary/20"
                           />
+
                           <button
                             disabled={listed}
                             onClick={removeThumbnail}
@@ -644,11 +746,13 @@ export function CreateEditListingForm({
                       </div>
                     )}
 
+                    {/* GALLERY */}
                     {form.image.length > 0 && (
                       <div>
                         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
                           Gallery
                         </p>
+
                         <div className="flex gap-3 flex-wrap">
                           {form.image.map((img, i) => (
                             <div key={i} className="relative w-20 h-20 group">
@@ -656,6 +760,7 @@ export function CreateEditListingForm({
                                 src={img}
                                 className="rounded-xl w-full h-full object-cover border-2 border-border"
                               />
+
                               <button
                                 disabled={listed}
                                 onClick={() => removeImage(i)}
@@ -673,36 +778,51 @@ export function CreateEditListingForm({
 
                 {step === 1 && (
                   <section className="space-y-5">
-                    <label className="form-label">Selling Method</label>
-                    <div className="flex gap-4">
-                      {(["fixed"] as const).map((method) => (
-                        <button
-                          key={method}
-                          onClick={() => update("sellingMethod", method)}
-                          className={`flex-1 option-card text-left ${
-                            form.sellingMethod === method
+                    {/* SELLING METHOD */}
+                    <div>
+                      <label className="form-label">Selling Method</label>
+
+                      <div
+                        className={`flex gap-4 rounded-xl p-1 ${errors.sellingMethod ? "border border-red-500" : ""
+                          }`}
+                      >
+                        {(["fixed"] as const).map((method) => (
+                          <button
+                            key={method}
+                            onClick={() => update("sellingMethod", method)}
+                            className={`flex-1 option-card text-left ${form.sellingMethod === method
                               ? "option-card-active"
                               : "option-card-inactive"
-                          }`}
-                        >
-                          <div className="font-semibold text-foreground capitalize">
-                            Fixed Price
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {method === "fixed"
-                              ? "Set a specific price"
-                              : "Let buyers bid"}
-                          </div>
-                        </button>
-                      ))}
+                              }`}
+                          >
+                            <div className="font-semibold text-foreground capitalize">
+                              Fixed Price
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {method === "fixed"
+                                ? "Set a specific price"
+                                : "Let buyers bid"}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {errors.sellingMethod && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.sellingMethod}
+                        </p>
+                      )}
                     </div>
 
+                    {/* PRICE */}
                     <div>
                       <label className="form-label">Selling Price</label>
+
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
                           $
                         </span>
+
                         <input
                           disabled={listed}
                           type="number"
@@ -710,139 +830,225 @@ export function CreateEditListingForm({
                           onChange={(e) =>
                             update("price", Number(e.target.value))
                           }
-                          className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
-           transition-all duration-200 ease-out
-           placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; pl-8"
+                          className={`w-full rounded-xl border px-4 py-3 text-sm bg-card text-foreground pl-8
+            transition-all duration-200 ease-out
+            placeholder:text-muted-foreground
+            focus:outline-none focus:ring-2
+            ${errors.price
+                              ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                              : "border-input focus:ring-primary/20 focus:border-primary"
+                            }`}
                         />
                       </div>
+
+                      {errors.price && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.price}
+                        </p>
+                      )}
                     </div>
 
-                    <label className="form-label">Privacy Level</label>
-                    <Select
-                      disabled={listed}
-                      value={
-                        privacyOptions.find(
-                          (opt) => opt.value === form.privacy,
-                        ) ?? null
-                      }
-                      placeholder="Select privacy level"
-                      options={privacyOptions}
-                      onChange={(option) => {
-                        const selected = option as Option | null;
-                        if (selected) {
-                          update("privacy", selected.value as Privacy);
-                        }
-                      }}
-                    />
+                    {/* PRIVACY */}
+                    <div>
+                      <label className="form-label">Privacy Level</label>
 
+                      <div
+                        className={`rounded-xl ${errors.privacy ? "border border-red-500 p-1" : ""
+                          }`}
+                      >
+                        <Select
+                          disabled={listed}
+                          value={
+                            privacyOptions.find(
+                              (opt) => opt.value === form.privacy,
+                            ) ?? null
+                          }
+                          placeholder="Select privacy level"
+                          options={privacyOptions}
+                          onChange={(option) => {
+                            const selected = option as Option | null;
+                            if (selected) {
+                              update("privacy", selected.value as Privacy);
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {errors.privacy && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.privacy}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* PAYMENT METHOD */}
                     <div>
                       <label className="form-label">Payment Method</label>
-                      <Select
-                        disabled={listed}
-                        value={
-                          paymentModeOptions.find(
-                            (opt) => opt.value === form.paymentMode,
-                          ) ?? null
-                        }
-                        placeholder="Select payment method"
-                        options={paymentModeOptions}
-                        onChange={(option) => {
-                          const selected = option as Option | null;
-                          if (selected) {
-                            update(
-                              "paymentMode",
-                              selected.value as PaymentMode,
-                            );
+
+                      <div
+                        className={`rounded-xl ${errors.paymentMode ? "border border-red-500 p-1" : ""
+                          }`}
+                      >
+                        <Select
+                          disabled={listed}
+                          value={
+                            paymentModeOptions.find(
+                              (opt) => opt.value === form.paymentMode,
+                            ) ?? null
                           }
-                        }}
-                      />
+                          placeholder="Select payment method"
+                          options={paymentModeOptions}
+                          onChange={(option) => {
+                            const selected = option as Option | null;
+                            if (selected) {
+                              update(
+                                "paymentMode",
+                                selected.value as PaymentMode,
+                              );
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {errors.paymentMode && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.paymentMode}
+                        </p>
+                      )}
                     </div>
 
+                    {/* BANK ACCOUNT */}
                     <div>
                       <label className="form-label">Bank Account</label>
-                      <Select
-                        disabled={listed}
-                        value={
-                          bankAccountOptions.find(
-                            (opt) => opt.value === form.bankAccount,
-                          ) ?? null
-                        }
-                        placeholder="Select account..."
-                        options={bankAccountOptions}
-                        onChange={(option) => {
-                          const selected = option as Option | null;
-                          update("bankAccount", selected?.value ?? "");
-                        }}
-                      />
+
+                      <div
+                        className={`rounded-xl ${errors.bankAccount ? "border border-red-500 p-1" : ""
+                          }`}
+                      >
+                        <Select
+                          disabled={listed}
+                          value={
+                            bankAccountOptions.find(
+                              (opt) => opt.value === form.bankAccount,
+                            ) ?? null
+                          }
+                          placeholder="Select account..."
+                          options={bankAccountOptions}
+                          onChange={(option) => {
+                            const selected = option as Option | null;
+                            update("bankAccount", selected?.value ?? "");
+                          }}
+                        />
+                      </div>
+
+                      {errors.bankAccount && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.bankAccount}
+                        </p>
+                      )}
                     </div>
 
-                    <label className="form-label">Tax Code</label>
-                    <Select
-                      disabled={listed}
-                      value={
-                        taxSelectOptions.find(
-                          (opt) => opt.value === form.taxCode,
-                        ) ?? null
-                      }
-                      placeholder="Select tax"
-                      options={taxSelectOptions}
-                      onChange={(option) => {
-                        const selected = option as Option | null;
-                        update("taxCode", selected?.value ?? "");
-                      }}
-                    />
+                    {/* TAX CODE */}
+                    <div>
+                      <label className="form-label">Tax Code</label>
+
+                      <div
+                        className={`rounded-xl ${errors.taxCode ? "border border-red-500 p-1" : ""
+                          }`}
+                      >
+                        <Select
+                          disabled={listed}
+                          value={
+                            taxSelectOptions.find(
+                              (opt) => opt.value === form.taxCode,
+                            ) ?? null
+                          }
+                          placeholder="Select tax"
+                          options={taxSelectOptions}
+                          onChange={(option) => {
+                            const selected = option as Option | null;
+                            update("taxCode", selected?.value ?? "");
+                          }}
+                        />
+                      </div>
+
+                      {errors.taxCode && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.taxCode}
+                        </p>
+                      )}
+                    </div>
                   </section>
                 )}
-
                 {step === 2 && (
                   <section className="space-y-5">
+                    {/* DELIVERY TYPE */}
                     <div>
                       <label className="form-label">Delivery Type</label>
-                      <Select
-                        disabled={listed}
-                        value={
-                          deliveryTypeOptions.find(
-                            (opt) => opt.value === form.deliveryType,
-                          ) ?? null
-                        }
-                        placeholder="Select delivery type"
-                        options={deliveryTypeOptions}
-                        onChange={(option) => {
-                          const selected = option as Option | null;
-                          if (selected) {
-                            update(
-                              "deliveryType",
-                              selected.value as DeliveryType,
-                            );
+
+                      <div
+                        className={`rounded-xl ${errors.deliveryType ? "border border-red-500 p-1" : ""
+                          }`}
+                      >
+                        <Select
+                          disabled={listed}
+                          value={
+                            deliveryTypeOptions.find(
+                              (opt) => opt.value === form.deliveryType,
+                            ) ?? null
                           }
-                        }}
-                      />
+                          placeholder="Select delivery type"
+                          options={deliveryTypeOptions}
+                          onChange={(option) => {
+                            const selected = option as Option | null;
+                            if (selected) {
+                              update(
+                                "deliveryType",
+                                selected.value as DeliveryType,
+                              );
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {errors.deliveryType && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.deliveryType}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="section-card p-4">
+                    {/* ADDRESS CARD */}
+                    <div
+                      className={`section-card p-4 ${errors.selectedAddressId ? "border border-red-500" : ""
+                        }`}
+                    >
                       <div className="flex items-start gap-3">
                         <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center shrink-0 mt-0.5">
                           <MapPin className="w-4 h-4 text-primary" />
                         </div>
+
                         <div>
                           <div className="font-medium text-foreground">
-                            {
-                              addresses.find(
-                                (a) => a.id === form.selectedAddressId,
-                              )?.name
-                            }
+                            {addresses.find(
+                              (a) => a.id === form.selectedAddressId,
+                            )?.name ?? "No address selected"}
                           </div>
+
                           <div className="text-sm text-muted-foreground">
-                            {
-                              addresses.find(
-                                (a) => a.id === form.selectedAddressId,
-                              )?.address
-                            }
+                            {addresses.find(
+                              (a) => a.id === form.selectedAddressId,
+                            )?.address ?? ""}
                           </div>
                         </div>
                       </div>
                     </div>
+
+                    {errors.selectedAddressId && (
+                      <p className="text-red-500 text-xs -mt-3">
+                        {errors.selectedAddressId}
+                      </p>
+                    )}
 
                     <button
                       disabled={listed}
@@ -864,6 +1070,7 @@ export function CreateEditListingForm({
                       ].map(({ key, label }) => (
                         <div key={key}>
                           <label className="form-label">{label}</label>
+
                           <input
                             disabled={listed}
                             type="number"
@@ -871,29 +1078,50 @@ export function CreateEditListingForm({
                             onChange={(e) =>
                               update(key, Number(e.target.value))
                             }
-                            className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
-           transition-all duration-200 ease-out
-           placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;"
+                            className={`w-full rounded-xl border px-4 py-3 text-sm bg-card text-foreground
+              transition-all duration-200 ease-out
+              placeholder:text-muted-foreground
+              focus:outline-none focus:ring-2
+              ${errors[key]
+                                ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                                : "border-input focus:ring-primary/20 focus:border-primary"
+                              }`}
                             placeholder={label}
                           />
+
+                          {errors[key] && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {errors[key]}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
 
                     <div>
                       <label className="form-label">Shipping Company</label>
+
                       <input
                         disabled={listed}
                         value={form.shippingCompany}
                         onChange={(e) =>
                           update("shippingCompany", e.target.value)
                         }
-                        className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground
-           transition-all duration-200 ease-out
-           placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;"
+                        className={`w-full rounded-xl border px-4 py-3 text-sm bg-card text-foreground
+          transition-all duration-200 ease-out
+          placeholder:text-muted-foreground
+          focus:outline-none focus:ring-2
+          ${errors.shippingCompany
+                            ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                            : "border-input focus:ring-primary/20 focus:border-primary"
+                          }`}
                       />
+
+                      {errors.shippingCompany && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.shippingCompany}
+                        </p>
+                      )}
                     </div>
                   </section>
                 )}
@@ -908,7 +1136,10 @@ export function CreateEditListingForm({
                       What is the Being ID level you want the buyer to be?
                     </p>
 
-                    <div className="space-y-3">
+                    <div
+                      className={`space-y-3 rounded-xl p-2 ${errors.buyerLevel ? "border border-red-500" : ""
+                        }`}
+                    >
                       {buyerLevels.map((lvl) => (
                         <div
                           key={lvl.level}
@@ -916,25 +1147,21 @@ export function CreateEditListingForm({
                             if (listed) return;
                             update("buyerLevel", lvl.level);
                           }}
-                          className={`option-card cursor-pointer ${
-                            form.buyerLevel === lvl.level
-                              ? "option-card-active"
-                              : "option-card-inactive"
-                          }`}
+                          className={`option-card cursor-pointer ${form.buyerLevel === lvl.level
+                            ? "option-card-active"
+                            : "option-card-inactive"
+                            }`}
                         >
                           <div className="flex items-start gap-3">
-                            {/* Circle */}
                             <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mt-1 ${
-                                form.buyerLevel === lvl.level
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mt-1 ${form.buyerLevel === lvl.level
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground"
+                                }`}
                             >
                               {lvl.level}
                             </div>
 
-                            {/* Text */}
                             <div className="flex-1">
                               <div className="font-semibold text-foreground">
                                 Level {lvl.level} · {lvl.title}
@@ -953,6 +1180,12 @@ export function CreateEditListingForm({
                         </div>
                       ))}
                     </div>
+
+                    {errors.buyerLevel && (
+                      <p className="text-red-500 text-xs">
+                        {errors.buyerLevel}
+                      </p>
+                    )}
                   </section>
                 )}
 
@@ -1019,7 +1252,15 @@ export function CreateEditListingForm({
            placeholder:text-muted-foreground
            focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary; flex-1"
             />
-            <button className="btn-primary whitespace-nowrap">Add New</button>
+            <button
+              onClick={() => {
+                setShowAddressModal(false);
+                setShowAddAddressDialog(true)
+              }}
+              className="btn-primary whitespace-nowrap"
+            >
+              Add New
+            </button>
           </div>
 
           <p className="text-sm text-muted-foreground">
@@ -1031,11 +1272,10 @@ export function CreateEditListingForm({
               <div
                 key={a.id}
                 onClick={() => setSelectedAddressLocal(a.id)}
-                className={`option-card cursor-pointer flex justify-between items-start ${
-                  selectedAddressLocal === a.id
-                    ? "option-card-active"
-                    : "option-card-inactive"
-                }`}
+                className={`option-card cursor-pointer flex justify-between items-start ${selectedAddressLocal === a.id
+                  ? "option-card-active"
+                  : "option-card-inactive"
+                  }`}
               >
                 <div>
                   <div className="font-semibold text-black flex items-center gap-2">
@@ -1071,6 +1311,14 @@ export function CreateEditListingForm({
           </div>
         </div>
       </Modal>
+      <AddAddressModal
+        isOpen={showAddAddressDialog}
+        onClose={() => setShowAddAddressDialog(false)}
+        onSave={(createdAddress) => {
+          setAddresses((prev) => [...prev, createdAddress]);
+          update("selectedAddressId", createdAddress.id);
+        }}
+      />
     </>
   );
 }

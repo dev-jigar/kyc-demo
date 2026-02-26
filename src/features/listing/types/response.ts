@@ -37,6 +37,14 @@ export type PaymentMode = "USD" | "CRYPTO";
 export type DeliveryType = "shipping" | "pickup";
 export type Privacy = "ALMOST_NOTHING" | "SOME" | "EVERYTHING";
 
+
+export interface StaticProductData {
+  id: string;
+  name: string;
+  description: string;
+  orgId: string;
+  image?: string;
+}
 export interface ProductListingItem {
   id: string;
   name: string;

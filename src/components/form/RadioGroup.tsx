@@ -30,7 +30,7 @@ export default function RadioGroup({
 
       <div className="space-y-2">
         {options.map((opt) => (
-          <label key={opt.value} className="flex items-center gap-2">
+          <label key={opt.value} className="flex items-center gap-2 text-black">
             <input
               type="radio"
               value={opt.value}

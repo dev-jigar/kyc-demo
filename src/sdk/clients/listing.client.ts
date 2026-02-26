@@ -1,4 +1,4 @@
-import { ProductListingItem } from "@/src/features/listing/types";
+import { Address, ProductListingItem } from "@/src/features/listing/types";
 import { Get, Post } from "../http";
 
 export async function getProductListing<T = unknown>(
@@ -30,6 +30,11 @@ export async function getAddressListing<T = unknown>(
   return Get<T>(`/address/list?userId=${encodeURIComponent(userId)}`);
 }
 
+export async function createAddress<T = unknown>(
+  payload: Address
+) {
+  return Post<T>("/address", payload);
+}
 
 
 export async function getTax<T = unknown>(
